@@ -69,8 +69,8 @@ OpenRouter spend for all runs: under $3 of the $5 budget.
 3. A premium model in the comparison, and ablations on a second model. A `no_grade`
    ablation and a prompt-variant comparison (both paid runs, to be confirmed first).
 4. The ReAct baseline on more models and with harder injection samples.
-6. Move the MCP server onto `agent/service.py`, so both front ends share one path.
-7. Generate the UI's TypeScript types from the Pydantic models instead of writing them
+5. Move the MCP server onto `agent/service.py`, so both front ends share one path.
+6. Generate the UI's TypeScript types from the Pydantic models instead of writing them
    by hand.
 
 ## Verification at the time of writing
