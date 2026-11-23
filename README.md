@@ -851,3 +851,8 @@ docs/           PLAN, PROGRESS, DECISIONS, LEARNING_NOTES, tickets/, examples/, 
 
 More detail: [`docs/DECISIONS.md`](docs/DECISIONS.md) explains each technical choice and
 [`docs/LEARNING_NOTES.md`](docs/LEARNING_NOTES.md) explains each part in plain language.
+
+## License
+
+[MIT](LICENSE). Third-party material keeps its own terms: see
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
