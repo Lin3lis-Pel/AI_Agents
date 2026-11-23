@@ -70,14 +70,53 @@ def test_advanced_options_apply_to_one_review(make_service, make_llm):
     }
     service = make_service(make_llm(searching))
 
-    default = [e.step for e in service.stream_review(SQL_OPEN.terraform)]
+    default = [e.step for e in service.stream_review(SQL_OPEN.terraform) if e.type == "step"]
     no_search = list(
         service.stream_review(SQL_OPEN.terraform, options=ReviewOptions(use_rag=False))
     )
 
     assert "retrieve" in default
-    assert "retrieve" not in [event.step for event in no_search]
+    assert "retrieve" not in [event.step for event in no_search if event.type == "step"]
     assert no_search[-1].type == "report"
+
+
+def test_an_unexpected_failure_is_an_event_and_its_cause_is_in_the_log(make_deps, log_lines):
+    """The user gets a reference, not the cause. The log has the cause, under it."""
+
+    def broken_settings(settings):
+        deps = make_deps()
+        deps.store.get_constraints = None  # the store cannot be read
+        return deps
+
+    service = ReviewService(broken_settings)
+
+    (event,) = service.stream_review(SQL_OPEN.terraform, request_id="req-1")
+
+    assert event.type == "error"
+    assert "TypeError" in event.message
+    assert event.review_id in event.message
+    (failure,) = [line for line in log_lines() if line["event"] == "review.failed"]
+    assert (failure["review_id"], failure["request_id"]) == (event.review_id, "req-1")
+    assert "NoneType" in failure["causes"][0]["message"]
+
+
+def test_the_log_follows_a_review_by_its_id_and_holds_none_of_its_content(
+    make_service, make_llm, log_lines
+):
+    service = make_service(make_llm(WRITER))
+
+    report = _review(service)
+
+    lines = log_lines()
+    steps = [line["node"] for line in lines if line["event"] == "review.step"]
+    assert steps[:3] == ["parse", "security_check", "cost_estimate"]
+    assert {line["review_id"] for line in lines} == {report.review_id}
+    finished = lines[-1]
+    assert finished["event"] == "review.finished"
+    assert finished["findings"] == len(report.findings)
+    text = str(lines)
+    assert "0.0.0.0/0" not in text  # from the Terraform
+    assert "One open database" not in text  # from the LLM
 
 
 ADVICE = {

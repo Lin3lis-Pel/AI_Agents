@@ -11,6 +11,7 @@ from typing import Any
 from agent.deps import Deps
 from agent.state import ReviewState
 from tools.cost_estimator import estimate_cost
+from tools.logs import log_failure
 from tools.models import Category, CostEstimate, Finding, Severity
 
 BUDGET_RULE_ID = "COST-BUDGET"
@@ -20,16 +21,18 @@ WHOLE_CONFIGURATION = "(whole configuration)"
 def make_cost_estimate(deps: Deps):
     def cost_estimate(state: ReviewState) -> dict[str, Any]:
         region = state.constraints.region or deps.settings.default_region
-        prices = deps.prices()
         try:
+            prices = deps.prices()
             estimate = estimate_cost(
                 state.resources, region, prices, deps.settings.assumed_storage_gb
             )
-        except Exception as exc:  # a pricing bug must not hide the security findings
+        except Exception as exc:  # a pricing problem must not hide the security findings
+            log_failure("cost_estimate.failed", exc)
             return {"errors": [f"Cost estimate failed ({type(exc).__name__})."]}
-        errors = (
-            [f"Billing API not used: {prices.fallback_reason}"] if prices.fallback_reason else []
-        )
+        errors = []
+        if prices.fallback_reason:
+            used = "partly" if prices.source == "billing_api" else "not"
+            errors = [f"Billing API {used} used: {prices.fallback_reason}"]
         budget = state.constraints.budget_monthly_usd
         return {
             "cost_estimate": estimate,

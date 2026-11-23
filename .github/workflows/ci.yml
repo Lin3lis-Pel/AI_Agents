@@ -1,0 +1,95 @@
+# Every check the README says passes, on every push. No secret is used and no paid service
+# is called: the tests fake the LLM, and the evals with a real one are run by hand.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.11"
+          enable-cache: true
+      - uses: actions/cache@v6 # the local embedding model, about 80 MB
+        with:
+          path: ~/.cache/chroma
+          key: chroma-onnx-${{ runner.os }}-all-MiniLM-L6-v2
+      - run: uv sync --locked
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run pytest --cov --cov-report=term-missing:skip-covered --cov-report=xml
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: coverage-python
+          path: coverage.xml
+          if-no-files-found: ignore
+
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run types:check # the TypeScript types match the saved API schema
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:coverage
+      - run: npm run build
+
+  e2e:
+    needs: [python, web]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.11"
+          enable-cache: true
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/chroma
+          key: chroma-onnx-${{ runner.os }}-all-MiniLM-L6-v2
+      - run: uv sync --locked
+      - run: npm ci
+        working-directory: web
+      - run: npx playwright install --with-deps chromium
+        working-directory: web
+      - run: npm run build
+        working-directory: web
+      - run: npm run test:e2e
+        working-directory: web
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report
+          path: web/playwright-report
+          if-no-files-found: ignore

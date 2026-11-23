@@ -39,8 +39,8 @@ carries a Google Cloud `source_url`.
 ## Phase 3: Memory
 
 - `memory/store.py`: project constraints, feedback and review history in SQLite.
-- `memory/feedback_policy.py`: feedback may deprioritise cost and sizing suggestions,
-  never security findings.
+- `memory/feedback_policy.py`: feedback may deprioritise cost, sizing and simplification
+  suggestions, never security findings.
 
 **Done when:** tests show that constraints persist, and that feedback aimed at a
 security finding has no effect.
@@ -60,11 +60,16 @@ always fails, and the pause/resume of human review.
 ## Phase 5: Interfaces
 
 - `mcp_server/server.py`: the `review_gcp_infra` tool.
-- `ui/app.py`: Streamlit UI with a separate Developer section, project memory, the
-  feedback form, and tokens, cost and time per review.
+- `agent/service.py`: the review service, the one interface every front end uses.
+- `api/server.py`: the HTTP API over it (FastAPI), streaming one event per step.
+- `web/`: the Next.js UI with live progress, project memory, the feedback form, closed
+  Advanced settings, and tokens, cost and time per review.
 
-**Done when:** the MCP tool is tested through the server's own call path, and the UI
-is tested with Streamlit's AppTest (Terraform in, finding shown).
+(The first version of the UI was a Streamlit app. Decision 19 says why it was replaced.)
+
+**Done when:** the MCP tool is tested through the server's own call path, the service and
+the routes have tests, the UI components have Vitest tests, and a browser test covers the
+whole path (Terraform in, finding shown, feedback saved).
 
 ## Phase 6: Evaluation
 

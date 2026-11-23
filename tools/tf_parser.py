@@ -3,9 +3,11 @@
 Two steps, both deterministic:
 
 1. `validate_terraform_input` rejects input that is empty, too large or clearly not
-   Terraform. It runs before the graph starts, so bad input never reaches the LLM.
-2. `parse_terraform` turns valid HCL into `Resource` objects. Comments are dropped here,
-   which is the first line of defence against prompt injection hidden in comments.
+   Terraform. The entry points (`agent/runner.py`, the ReAct baseline) call it before
+   anything else runs, so bad input never reaches the LLM.
+2. `parse_terraform` does not validate again: it turns HCL into `Resource` objects.
+   Comments are dropped here, which is the first line of defence against prompt
+   injection hidden in comments.
 """
 
 from __future__ import annotations
@@ -94,7 +96,6 @@ def validate_terraform_input(text: object) -> None:
 
 def parse_terraform(text: str) -> list[Resource]:
     """Parse Terraform text into resources. Unsupported types get `service=None`."""
-    validate_terraform_input(text)
     text = _strip_bom(text)
     try:
         tree = hcl2.loads(text, serialization_options=_PARSE_OPTIONS)

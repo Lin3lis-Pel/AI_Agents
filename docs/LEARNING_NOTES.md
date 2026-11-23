@@ -210,8 +210,50 @@ budget saved for the project, but the first version of the page listed it under 
 by an AI model". Reading real output, not a fixture, is what caught it.
 
 **What was given up.** Two processes to start instead of one, and two languages. The
-TypeScript types are written by hand; the contract test catches a missing field, not a
-wrong type.
+TypeScript types were written by hand at first; the contract test caught a missing field,
+not a wrong type. They are generated now (next section).
+
+### Making it hold up when things go wrong (2026-11-23)
+
+**What was built.** Five things that only matter on a bad day: a time limit for a whole
+step, a billing client that survives any answer, logs that say why something failed, a page
+that cannot get stuck, and a CI run that checks all of it.
+
+**A timeout is not a deadline.** A *timeout* limits one attempt. The client makes three
+attempts, and a reply that is not valid JSON starts over. Worse, a provider can send a
+byte now and then to keep the connection open, and then the timeout never fires. A
+*deadline* is a moment on the clock, and everything has to fit before it. The LLM call runs
+in its own thread and the review waits for it only until the deadline. Python cannot kill
+a thread, so the late one is left behind. That is the honest cost of this solution.
+
+**Where is the edge of an external system?** The billing client caught "could not connect"
+and "server error", and everything else was assumed to work. But an external system can
+also answer *successfully* with something you did not expect: an HTML login page, a list
+where an object was, the same page for ever. The rule I took from this: the place that
+promises a fallback has to catch everything behind it, and log what it caught.
+
+**Why not log everything?** Because a log is kept and copied. The HTTP library writes the
+full URL of every request, and the billing key was in the URL. Turning on logging the easy
+way would have leaked it. So the key moved to a header, only this project's own logger is
+switched on, and messages are cleaned before they are written. The Terraform and the model's
+text are never logged at all.
+
+**What is a review id for?** The user sees "Reference: 4f928f4e0721". That one word finds
+every log line of that review, including the step that failed and the error behind it. The
+user learns nothing they should not, and I lose nothing I need.
+
+**Generated types.** Writing the same shape twice, in two languages, means they drift. Now
+Pydantic writes the schema and a tool writes the TypeScript. A wrong field is a compile
+error. It paid off at once: the old types allowed the page to read a message from events
+that have none.
+
+**The test that crosses the boundary.** The lesson of the first version was "tests on each
+side of a boundary do not test the boundary". The browser test is that lesson turned into
+code: a real browser, the real web server, the real API and graph, and only the LLM faked.
+
+**What can break.** The redaction works by patterns and can miss a secret of an unusual
+form. An abandoned LLM call may still cost a fraction of a cent that the report does not
+count. Generated files can be forgotten, but then a test fails and says what to run.
 
 ---
 
@@ -412,8 +454,18 @@ agentic parts are where the LLM chooses what to research, judges its own search
 results, and decides to try again. The control flow around those choices is fixed
 code, so the freedom is bounded.
 
-**"What would you do with more time?"** A held-out dataset, real variable resolution,
-more rules, and live prices for every service.
+**"What would you do with more time?"** Human labels for the held-out files, real variable
+resolution, and more rules.
+
+**"Why did a review take ten minutes once, and can it again?"** The timeout was per attempt
+and the retries added up (628 s). Every step now has 90 seconds in total and every review
+180. At the limit the rule findings and the cost estimate are returned without the advice.
+
+**"How accurate are the prices?"** The estimator's arithmetic is exact on my samples, but
+that only compares it with sums from the same price table. I compared the table itself with
+the live catalog: exact for VMs, disks and the GKE fee, but up to 38% off for Cloud Storage
+outside the US, because of a rough region multiplier. With a billing key the live prices
+are used for all five services. The evals keep the static table on purpose.
 
 **"Which model would you use?"** For the UI and the MCP tool, Gemini 3.5 Flash Lite:
 about 3 seconds per review against about 20 for the other two, the steadiest between
@@ -435,6 +487,13 @@ search there is one call and half the time, but no recommendation has a source (
 (grading the search results) is the one I have not measured on its own: Ragas context
 precision suggests it helps (1.00 against 0.63 for the baseline without it), but I have
 not run the graph without it. I say that openly; it is under future work.
+
+**"How do the rules do on Terraform you did not write?"** On 35 files by others, labelled by
+Checkov, they found all 53 labelled problems and reported 7 that Checkov did not, all from one
+rule (public IP on Cloud SQL when nothing is said about IPs). I could not prove who is right,
+so I changed neither the rule nor the labels. "Held out" means exactly that: the moment I
+tune a rule to these files, they stop telling me anything. The files were picked by code and
+the mapping was written before the scan, so neither could be bent towards a good score.
 
 **"Your eval says the rules are perfect. Are they?"** No. They are perfect on 14 samples
 I wrote next to the rules. Trying other common ways of writing the same resources found

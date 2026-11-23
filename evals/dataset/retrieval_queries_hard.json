@@ -1,0 +1,26 @@
+{
+  "description": "Harder search queries, written on 2026-11-23 before any of them was run, to test the retriever and the rewrite loop where the ordinary queries cannot. `vague`: a symptom, with none of the documentation's words. `other_cloud`: the vocabulary of AWS. `two_topics`: one query that mixes two subjects. `uncovered`: a question on a supported service that no document in the store answers; the right outcome is that nothing is kept. A query counts as answered when any of its `expected_docs` is found.",
+  "queries": [
+    {"kind": "vague", "service": "compute", "query": "our bill for the app server doubled, what should we look at first", "expected_docs": ["compute/machine-type-recommendations"]},
+    {"kind": "vague", "service": "compute", "query": "nightly video conversion can be restarted, make it cheaper", "expected_docs": ["compute/spot-vms"]},
+    {"kind": "vague", "service": "cloud_sql", "query": "the test database costs as much as production, what can we turn off", "expected_docs": ["cloud_sql/high-availability"]},
+    {"kind": "vague", "service": "cloud_storage", "query": "old exports keep piling up and nobody cleans them", "expected_docs": ["cloud_storage/lifecycle"]},
+    {"kind": "vague", "service": "cloud_run", "query": "the first visitor after lunch waits ten seconds", "expected_docs": ["cloud_run/min-instances"]},
+    {"kind": "vague", "service": "gke", "query": "it is quiet at night but we still pay for everything", "expected_docs": ["gke/cluster-autoscaler", "gke/autopilot-overview"]},
+    {"kind": "vague", "service": "gke", "query": "we are two developers and do not want to look after machines", "expected_docs": ["gke/autopilot-overview", "gke/choose-cluster-mode"]},
+    {"kind": "other_cloud", "service": "compute", "query": "equivalent of AWS reserved instances", "expected_docs": ["compute/committed-use-discounts"]},
+    {"kind": "other_cloud", "service": "compute", "query": "gp3 or io2 volume for the root device", "expected_docs": ["compute/disks"]},
+    {"kind": "other_cloud", "service": "cloud_storage", "query": "S3 Intelligent-Tiering alternative", "expected_docs": ["cloud_storage/autoclass"]},
+    {"kind": "other_cloud", "service": "cloud_storage", "query": "Glacier style tier for compliance data", "expected_docs": ["cloud_storage/storage-classes"]},
+    {"kind": "other_cloud", "service": "cloud_run", "query": "something like Fargate for one container", "expected_docs": ["cloud_run/what-is-cloud-run"]},
+    {"kind": "other_cloud", "service": "cloud_sql", "query": "price impact of RDS Multi-AZ", "expected_docs": ["cloud_sql/high-availability"]},
+    {"kind": "other_cloud", "service": "gke", "query": "EKS on Fargate equivalent", "expected_docs": ["gke/autopilot-overview"]},
+    {"kind": "two_topics", "service": "compute", "query": "smaller machine and cheaper disk for a low traffic site", "expected_docs": ["compute/machine-type-recommendations", "compute/disks", "compute/general-purpose-machines"]},
+    {"kind": "two_topics", "service": "cloud_run", "query": "keep one instance warm but do not pay for CPU between requests", "expected_docs": ["cloud_run/billing-settings", "cloud_run/min-instances"]},
+    {"kind": "uncovered", "service": "compute", "query": "which GPU type for model training and what does it cost", "expected_docs": []},
+    {"kind": "uncovered", "service": "cloud_sql", "query": "SQL Server licence cost per core", "expected_docs": []},
+    {"kind": "uncovered", "service": "cloud_storage", "query": "price of download traffic and requester pays", "expected_docs": []},
+    {"kind": "uncovered", "service": "cloud_run", "query": "cost of running scheduled batch jobs", "expected_docs": []},
+    {"kind": "uncovered", "service": "gke", "query": "cost of the managed service mesh", "expected_docs": []}
+  ]
+}

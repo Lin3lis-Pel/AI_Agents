@@ -15,6 +15,7 @@ const BUDGET = {
   rule_id: "COST-BUDGET",
   category: "cost" as const,
   deprioritized: false,
+  terraform_fields: [],
 };
 
 describe("FeedbackForm", () => {

@@ -4,6 +4,7 @@ Only the LLM is faked. Expected values come from evals/dataset/expected.json.
 """
 
 import json
+import time
 
 import pytest
 
@@ -12,6 +13,7 @@ from agent.runner import ReviewNotPausedError, ReviewSession, run_review
 from evals.dataset_loader import load_samples
 from memory.store import FeedbackAction, FeedbackItem, ProjectConstraints
 from rag.retriever import RetrieverError
+from tools.billing_api import BillingApiError
 from tools.models import Category, Severity
 from tools.tf_parser import NotTerraformError
 
@@ -351,6 +353,100 @@ def test_review_survives_a_broken_document_store(make_deps, make_llm):
 
     assert report.status == "ok"
     assert any("has not been built" in warning for warning in report.warnings)
+
+
+def _slow(seconds: float, reply: dict):
+    """An LLM reply that takes `seconds` to arrive, however patient the client is."""
+
+    def answer(user: str) -> dict:
+        time.sleep(seconds)
+        return reply
+
+    return answer
+
+
+def test_a_step_that_hangs_is_given_up_at_its_time_limit(make_deps, make_llm, log_lines):
+    hanging = make_llm(
+        {"PLAN_RESEARCH": {"queries": []}, "WRITE_REPORT": _slow(5, {"summary": "too late"})}
+    )
+    started = time.perf_counter()
+
+    report = run_review(SQL_OPEN.terraform, deps=make_deps(hanging, llm_step_deadline_s=0.2))
+
+    assert time.perf_counter() - started < 3
+    assert security_pairs(report) == expected_pairs(SQL_OPEN)
+    assert "not available" in report.summary
+    assert any("time limit" in warning for warning in report.warnings)
+    deadline = next(line for line in log_lines() if line["event"] == "llm.deadline")
+    assert (deadline["node"], deadline["review_id"]) == ("write_report", report.review_id)
+
+
+def test_the_time_limit_covers_the_repair_attempt_too(make_deps, make_llm):
+    """Each attempt is quick enough on its own. Together they are not."""
+    llm = make_llm({"PLAN_RESEARCH": {"queries": []}, "WRITE_REPORT": _slow(0.3, "not json")})
+
+    report = run_review(SQL_OPEN.terraform, deps=make_deps(llm, llm_step_deadline_s=0.4))
+
+    assert any("time limit" in warning for warning in report.warnings)
+    # the first attempt was answered, so its tokens are paid for and counted
+    assert report.usage.calls_by_node["write_report"] == 1
+
+
+def test_no_llm_step_starts_once_the_review_is_out_of_time(make_deps, make_llm):
+    llm = make_llm(
+        {"PLAN_RESEARCH": _slow(5, {"queries": []}), "WRITE_REPORT": {"summary": "never asked"}}
+    )
+    deps = make_deps(llm, review_deadline_s=0.3)
+    deps.search = lambda query, service, k: []
+
+    report = run_review(SQL_OPEN.terraform, deps=deps)
+
+    assert [call["marker"] for call in llm.calls] == ["PLAN_RESEARCH"]
+    assert security_pairs(report) == expected_pairs(SQL_OPEN)
+    assert report.cost_estimate.total_monthly_usd == pytest.approx(231.25)
+
+
+def test_a_timeout_raised_by_the_provider_is_reported_as_such(make_deps, make_llm):
+    llm = make_llm({"PLAN_RESEARCH": {"queries": []}, "WRITE_REPORT": TimeoutError("read")})
+
+    report = run_review(SQL_OPEN.terraform, deps=make_deps(llm))
+
+    assert any("TimeoutError" in warning for warning in report.warnings)
+
+
+def test_prices_that_cannot_be_loaded_at_all_do_not_stop_the_review(make_deps, make_llm, log_lines):
+    deps = make_deps(happy_llm(make_llm))
+    deps.prices = lambda: (_ for _ in ()).throw(OSError("prices_static.json is gone"))
+
+    report = run_review(SQL_OPEN.terraform, deps=deps)
+
+    assert report.status == "ok"
+    assert security_pairs(report) == expected_pairs(SQL_OPEN)
+    assert report.cost_estimate is None
+    assert any("Cost estimate failed (OSError)" in warning for warning in report.warnings)
+    failure = next(line for line in log_lines() if line["event"] == "cost_estimate.failed")
+    assert failure["causes"][0]["message"] == "prices_static.json is gone"
+
+
+def test_a_price_fallback_is_retried_soon_and_live_prices_are_kept(make_deps):
+    class Catalog:  # the Billing API, down at first
+        calls = 0
+
+        def list_skus(self, service_id):
+            self.calls += 1
+            raise BillingApiError("Billing Catalog API request failed (HTTP 503).")
+
+    now = [0.0]
+    deps = make_deps()
+    deps.clock, deps.billing_client = lambda: now[0], Catalog()
+
+    deps.prices()
+    first = deps.billing_client.calls
+    deps.prices()
+    assert deps.billing_client.calls == first  # not asked again for every review
+    now[0] = 301
+    deps.prices()
+    assert deps.billing_client.calls == 2 * first
 
 
 def test_input_that_is_not_terraform_is_rejected_before_any_llm_call(make_deps, make_llm):

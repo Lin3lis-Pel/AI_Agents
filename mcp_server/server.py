@@ -7,7 +7,8 @@ Run with:  uv run python -m mcp_server.server      (stdio transport)
 
 The tool is read-only. It never touches a GCP project and needs no GCP credentials.
 Errors are returned as a normal result with a clear message, so the calling agent can
-tell the user what went wrong instead of seeing a stack trace.
+tell the user what went wrong instead of seeing a stack trace. The cause goes to the log
+on stderr (stdout carries the protocol), under the reference given in the message.
 """
 
 from __future__ import annotations
@@ -20,7 +21,8 @@ from mcp.server.mcpserver import MCPServer
 
 from agent.deps import Deps, default_deps
 from agent.report import render_markdown
-from agent.runner import run_review
+from agent.runner import new_review_id, run_review
+from tools.logs import configure_logging, log_event, log_failure
 from tools.tf_parser import TerraformInputError
 
 _PROJECT_ID = re.compile(r"^[A-Za-z0-9_.-]{1,64}$")
@@ -36,12 +38,20 @@ def review(terraform: str, project_id: str, deps_factory: Callable[[], Deps]) ->
     """Run a review and turn every outcome, including failures, into a result dict."""
     if not _PROJECT_ID.match(project_id):
         return _problem("rejected", "project_id may only contain letters, digits, '_', '.', '-'.")
+    review_id = new_review_id()
+    log_event("review.started", review_id=review_id, via="mcp")
     try:
-        report = run_review(terraform, project_id, deps=deps_factory())
+        report = run_review(terraform, project_id, deps=deps_factory(), review_id=review_id)
     except TerraformInputError as exc:
+        log_event("review.rejected", review_id=review_id, reason=type(exc).__name__)
         return _problem("rejected", str(exc))
     except Exception as exc:  # last line of defence: never return a stack trace
-        return _problem("error", f"The review failed unexpectedly ({type(exc).__name__}).")
+        log_failure("review.failed", exc, review_id=review_id)
+        return _problem(
+            "error",
+            f"The review failed unexpectedly ({type(exc).__name__}). Reference: {review_id}.",
+        )
+    log_event("review.finished", review_id=review_id, status=report.status)
     return {
         "status": report.status,
         "markdown": render_markdown(report),
@@ -75,4 +85,5 @@ def create_server(deps_factory: Callable[[], Deps] = default_deps) -> MCPServer:
 
 
 if __name__ == "__main__":
+    configure_logging()
     create_server().run()

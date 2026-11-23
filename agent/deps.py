@@ -12,11 +12,14 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TypeVar
 
 from langchain_core.language_models import BaseChatModel
+from pydantic import BaseModel
 
 from agent.config import Settings
-from agent.llm import get_chat_model
+from agent.llm import LLMDeadlineError, UsageRecord, call_json, get_chat_model
+from agent.state import ReviewState
 from memory.store import MemoryStore
 from rag.retriever import search_gcp_docs
 from tools.billing_api import BillingCatalogClient, load_prices
@@ -25,6 +28,9 @@ from tools.pricing import PriceTable
 
 SearchFn = Callable[[str, str | None, int], list[Doc]]
 PROMPTS_DIR = Path(__file__).parent / "prompts"
+LIVE_PRICES_S = 24 * 3600  # list prices change rarely
+FALLBACK_PRICES_S = 300  # after a failure, try the API again before long
+T = TypeVar("T", bound=BaseModel)
 
 
 @dataclass
@@ -35,16 +41,33 @@ class Deps:
     search: SearchFn
     billing_client: BillingCatalogClient | None = None
     clock: Callable[[], float] = time.perf_counter
-    _prices: PriceTable | None = field(default=None, repr=False)
+    _prices: tuple[float, PriceTable] | None = field(default=None, repr=False)
 
     def prices(self) -> PriceTable:
-        """Load prices once per `Deps` object (the Billing API call is slow)."""
-        if self._prices is None:
-            self._prices = load_prices(self.billing_client)
-        return self._prices
+        """The price table, kept for a day (the Billing API call is slow), or for minutes
+        when it is a fallback: one bad answer must not decide prices until a restart."""
+        if self._prices is None or self.clock() >= self._prices[0]:
+            prices = load_prices(self.billing_client)
+            failed = self.billing_client is not None and prices.fallback_reason is not None
+            keep_s = FALLBACK_PRICES_S if failed else LIVE_PRICES_S
+            self._prices = (self.clock() + keep_s, prices)
+        return self._prices[1]
+
+    def ask(
+        self, state: ReviewState, node: str, system: str, user: str, schema: type[T]
+    ) -> tuple[T, list[UsageRecord]]:
+        """One LLM step of a review, inside the step's and the review's time limit."""
+        limit = self.settings.llm_step_deadline_s
+        if state.deadline_at is not None:
+            limit = min(limit, state.deadline_at - self.clock())
+        if limit <= 0 and self.llm is not None:
+            raise LLMDeadlineError("The review's time limit was reached.")
+        return call_json(self.llm, node, system, user, schema, timeout_s=limit)
 
     def prompt(self, name: str) -> str:
         """Load a prompt template from `agent/prompts/<name>.md`."""
+        if name == "write_report" and self.settings.report_prompt_path is not None:
+            return self.settings.report_prompt_path.read_text(encoding="utf-8")
         return (PROMPTS_DIR / f"{name}.md").read_text(encoding="utf-8")
 
 

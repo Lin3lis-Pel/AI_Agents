@@ -9,14 +9,21 @@
 
 Failure handling: the client has a timeout and retries with backoff (built into
 `ChatOpenAI`). A reply that is not valid JSON for the schema gets one repair attempt.
-After that `LLMCallError` is raised, and each node has a deterministic fallback.
+All of that together has one total time limit, because the per-attempt timeout does not
+add up to one. After that `LLMCallError` is raised, and each node has a deterministic
+fallback. The cause is logged; the message a user sees names only its type.
 """
 
 from __future__ import annotations
 
+import contextvars
 import json
+import logging
 import os
 import re
+import threading
+import time
+from concurrent.futures import Future
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, TypeVar
@@ -26,6 +33,7 @@ from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from pydantic import BaseModel, ValidationError
 
 from agent.config import Settings
+from tools.logs import log_event, log_failure
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 MODEL_PRICES_PATH = Path(__file__).parent / "model_prices.json"
@@ -48,6 +56,10 @@ class LLMCallError(Exception):
     def __init__(self, message: str, usage: list[UsageRecord] | None = None) -> None:
         super().__init__(message)
         self.usage = usage or []
+
+
+class LLMDeadlineError(LLMCallError):
+    """The step used up its time limit."""
 
 
 @dataclass(frozen=True)
@@ -93,25 +105,39 @@ def get_chat_model(settings: Settings, provider: Provider | None = None) -> Base
 
 
 def call_json(
-    llm: BaseChatModel | None, node: str, system: str, user: str, schema: type[T]
+    llm: BaseChatModel | None,
+    node: str,
+    system: str,
+    user: str,
+    schema: type[T],
+    timeout_s: float | None = None,
 ) -> tuple[T, list[UsageRecord]]:
-    """Ask for a JSON object and validate it against `schema`."""
+    """Ask for a JSON object and validate it against `schema`.
+
+    `timeout_s` limits the whole call: every attempt, retry and repair together.
+    """
     if llm is None:
         raise LLMCallError("No LLM is configured (missing API key).")
+    deadline = None if timeout_s is None else time.monotonic() + timeout_s
     json_llm = llm.bind(response_format={"type": "json_object"})
     messages: list[BaseMessage] = [SystemMessage(content=system), HumanMessage(content=user)]
     usage: list[UsageRecord] = []
     for _attempt in range(2):
         try:
-            reply = json_llm.invoke(messages)
+            reply = _invoke_before(deadline, json_llm, messages)
+        except DeadlineReached as exc:
+            log_event("llm.deadline", level=logging.WARNING, node=node, limit_s=timeout_s)
+            raise LLMDeadlineError("The LLM took longer than the time limit.", usage) from exc
         except Exception as exc:
             # Only the exception type is reported: messages can contain request details.
+            log_failure("llm.failed", exc, level=logging.WARNING, node=node, model=model_name(llm))
             raise LLMCallError(f"LLM call failed ({type(exc).__name__}).", usage) from exc
         usage.append(_usage_of(reply, node, llm))
         text = _text_of(reply)
         try:
             return schema.model_validate(_extract_json(text)), usage
-        except (ValidationError, ValueError):
+        except (ValidationError, ValueError) as exc:
+            log_failure("llm.bad_reply", exc, level=logging.WARNING, node=node)
             messages += [
                 reply,
                 HumanMessage(
@@ -120,6 +146,41 @@ def call_json(
                 ),
             ]
     raise LLMCallError("The LLM did not return valid JSON after one retry.", usage)
+
+
+class DeadlineReached(Exception):
+    """Internal: no answer before the deadline."""
+
+
+def _invoke_before(deadline: float | None, llm: Any, messages: list[BaseMessage]) -> BaseMessage:
+    """Call the LLM, but stop waiting at `deadline` (on `time.monotonic`).
+
+    The call runs in its own thread, because a blocking HTTP call cannot be interrupted
+    from outside. At the deadline the thread is left behind: its answer is ignored, and it
+    ends when the client's own timeouts and retries do. The thread is a daemon, so it
+    cannot keep the process alive. Tokens it may still spend are not in the usage count.
+    """
+    if deadline is None:
+        return llm.invoke(messages)
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise DeadlineReached
+    answer: Future[BaseMessage] = Future()
+    context = contextvars.copy_context()  # tracing and the review id follow the call
+
+    def work() -> None:
+        try:
+            answer.set_result(context.run(llm.invoke, messages))
+        except BaseException as exc:  # handed to the caller, who decides
+            answer.set_exception(exc)
+
+    threading.Thread(target=work, name="llm-call", daemon=True).start()
+    try:
+        return answer.result(timeout=remaining)
+    except TimeoutError:
+        if answer.done():
+            raise  # the LLM call itself raised TimeoutError
+        raise DeadlineReached from None
 
 
 def _extract_json(text: str) -> Any:

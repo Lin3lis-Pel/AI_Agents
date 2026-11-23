@@ -17,9 +17,10 @@ const CAPABILITIES: Capabilities = {
 const SAMPLE = 'resource "google_compute_instance" "app" {}';
 
 type Call = { url: string; method: string; body: unknown };
+type Overrides = Record<string, () => Response>;
 
 /** Fake the Python API at the network boundary and record what the screen sent. */
-function fakeApi(reviewEvents: ReviewEvent[]) {
+function fakeApi(reviewEvents: ReviewEvent[], overrides: Overrides = {}) {
   const calls: Call[] = [];
   const json = (data: unknown) => new Response(JSON.stringify(data), { status: 200 });
   vi.stubGlobal(
@@ -27,6 +28,7 @@ function fakeApi(reviewEvents: ReviewEvent[]) {
     vi.fn(async (url: string, init?: RequestInit) => {
       const method = init?.method ?? "GET";
       calls.push({ url, method, body: init?.body ? JSON.parse(String(init.body)) : undefined });
+      if (overrides[url]) return overrides[url]();
       if (url === "/api/capabilities") return json(CAPABILITIES);
       if (url === "/api/samples") return json({ samples: ["mixed/web_stack.tf"] });
       if (url === "/api/samples/mixed/web_stack.tf") return json({ terraform: SAMPLE });
@@ -100,6 +102,39 @@ describe("ReviewApp", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/does not look like Terraform/);
     expect(screen.queryByRole("region", { name: /security findings/i })).not.toBeInTheDocument();
+  });
+
+  it("says so when the examples cannot be loaded, and still works without them", async () => {
+    fakeApi(FINISHED_REVIEW, { "/api/samples": () => new Response("no", { status: 500 }) });
+    const user = userEvent.setup();
+    render(<ReviewApp />);
+
+    expect(await screen.findByText(/examples could not be loaded/i)).toBeVisible();
+    await user.type(screen.getByRole("textbox", { name: "Terraform" }), "resource x");
+    await user.click(screen.getByRole("button", { name: /^review$/i }));
+
+    expect(await screen.findByText(REPORT.headline)).toBeVisible();
+  });
+
+  it("is ready for another try when the connection breaks during a review", async () => {
+    const step = new TextEncoder().encode('{"type":"step","step":"parse"}\n');
+    let sent = false;
+    const broken = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (sent) controller.error(new TypeError("network error"));
+        else controller.enqueue(step);
+        sent = true;
+      },
+    });
+    fakeApi([], { "/api/reviews": () => new Response(broken) });
+    const user = userEvent.setup();
+    render(<ReviewApp />);
+
+    await user.type(await screen.findByRole("textbox", { name: "Terraform" }), "resource x");
+    await user.click(screen.getByRole("button", { name: /^review$/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/connection .* was lost/i);
+    expect(screen.getByRole("button", { name: /^review$/i })).toBeEnabled();
   });
 
   it("keeps advanced settings apart and sends only what was changed", async () => {

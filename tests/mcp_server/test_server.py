@@ -53,7 +53,7 @@ def test_bad_project_id_is_rejected(make_deps):
     assert result["status"] == "rejected"
 
 
-def test_unexpected_failure_returns_an_error_result_not_a_stack_trace():
+def test_unexpected_failure_returns_an_error_result_not_a_stack_trace(log_lines):
     def broken_factory():
         raise RuntimeError("database password is hunter2")
 
@@ -62,4 +62,10 @@ def test_unexpected_failure_returns_an_error_result_not_a_stack_trace():
 
     result = call_tool(server, {"terraform": sample.terraform})
 
-    assert result == {"status": "error", "error": "The review failed unexpectedly (RuntimeError)."}
+    assert result["status"] == "error"
+    assert "The review failed unexpectedly (RuntimeError)." in result["error"]
+    assert "hunter2" not in str(result)
+    failure = next(line for line in log_lines() if line["event"] == "review.failed")
+    assert failure["review_id"] in result["error"]  # the reference leads to the cause
+    assert "test_server.py" in failure["causes"][0]["at"][-1]
+    assert "hunter2" not in str(failure)

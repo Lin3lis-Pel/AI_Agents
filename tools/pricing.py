@@ -13,6 +13,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 STATIC_PRICES_PATH = Path(__file__).parent / "prices_static.json"
+FLAT_PRICES = {"gke.cluster_fee_hour"}  # the same in every region: no multiplier
 
 
 class PriceNotFoundError(KeyError):
@@ -46,7 +47,8 @@ class PriceTable(BaseModel):
             return exact[key]
         if key not in self.prices:
             raise PriceNotFoundError(key)
-        return self.prices[key] * self.region_multipliers.get(region, 1.0)
+        multiplier = 1.0 if key in FLAT_PRICES else self.region_multipliers.get(region, 1.0)
+        return self.prices[key] * multiplier
 
 
 def load_static_prices(path: Path = STATIC_PRICES_PATH) -> PriceTable:

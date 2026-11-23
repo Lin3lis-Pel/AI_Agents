@@ -14,7 +14,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from agent.deps import Deps
-from agent.llm import LLMCallError, call_json
+from agent.llm import LLMCallError
 from agent.state import ReviewState
 from agent.summary import summarize_resources, wrap_data
 
@@ -27,6 +27,8 @@ def make_grade_docs(deps: Deps):
     def grade_docs(state: ReviewState) -> dict[str, Any]:
         if not state.docs:
             return {}
+        if not deps.settings.use_grading:  # the `no_grade` ablation
+            return {"relevant_docs": [*state.relevant_docs, *state.docs]}
         payload = {
             "resources": summarize_resources(state.resources),
             "queries": [query.query for query in state.queries],
@@ -35,8 +37,8 @@ def make_grade_docs(deps: Deps):
             ],
         }
         try:
-            grades, usage = call_json(
-                deps.llm,
+            grades, usage = deps.ask(
+                state,
                 "grade_docs",
                 deps.prompt("grade_docs"),
                 wrap_data(json.dumps(payload, indent=1)),

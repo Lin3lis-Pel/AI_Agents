@@ -76,6 +76,7 @@ export const REPORT: ReviewReport = {
   unsupported_resources: ["google_pubsub_topic.events"],
   warnings: ["1 resource(s) are of an unsupported type and were not reviewed."],
   sources: [],
+  evidence: [],
   usage: {
     llm_calls: 3,
     input_tokens: 4413,

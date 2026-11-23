@@ -7,6 +7,7 @@ collection and the SQLite store are real.
 
 from __future__ import annotations
 
+import io
 import json
 from pathlib import Path
 from typing import Any
@@ -77,6 +78,19 @@ def no_real_api_keys(monkeypatch: pytest.MonkeyPatch) -> None:
                  "LANGSMITH_API_KEY"):  # fmt: skip
         monkeypatch.setenv(name, "")
     monkeypatch.setenv("LANGSMITH_TRACING", "false")
+
+
+@pytest.fixture
+def log_lines():
+    """Configure logging to a buffer. Returns a function that reads it as JSON lines."""
+    from tools.logs import configure_logging, logger
+
+    stream = io.StringIO()
+    handlers, level, propagate = logger.handlers[:], logger.level, logger.propagate
+    configure_logging(stream)
+    yield lambda: [json.loads(line) for line in stream.getvalue().splitlines()]
+    logger.handlers[:], logger.propagate = handlers, propagate
+    logger.setLevel(level)
 
 
 @pytest.fixture(scope="session")

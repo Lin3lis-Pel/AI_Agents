@@ -11,7 +11,7 @@ import json
 from typing import Any
 
 from agent.deps import Deps
-from agent.llm import LLMCallError, call_json
+from agent.llm import LLMCallError
 from agent.nodes.plan_research import ResearchPlan, clean_queries
 from agent.state import ReviewState
 from agent.summary import summarize_resources, wrap_data
@@ -26,8 +26,8 @@ def make_rewrite_query(deps: Deps):
             "found_titles": [doc.title for doc in state.docs],
         }
         try:
-            plan, usage = call_json(
-                deps.llm,
+            plan, usage = deps.ask(
+                state,
                 "rewrite_query",
                 deps.prompt("rewrite_query"),
                 wrap_data(json.dumps(payload, indent=1)),

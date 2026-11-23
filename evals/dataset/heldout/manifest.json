@@ -1,0 +1,652 @@
+{
+  "scored": [
+    {
+      "rule_id": "GCS-001",
+      "resource_types": [
+        "google_storage_bucket_iam_member",
+        "google_storage_bucket_iam_binding"
+      ]
+    },
+    {
+      "rule_id": "GCS-002",
+      "resource_types": [
+        "google_storage_bucket"
+      ]
+    },
+    {
+      "rule_id": "GCS-003",
+      "resource_types": [
+        "google_storage_bucket"
+      ]
+    },
+    {
+      "rule_id": "GCS-004",
+      "resource_types": [
+        "google_storage_bucket"
+      ]
+    },
+    {
+      "rule_id": "SQL-001",
+      "resource_types": [
+        "google_sql_database_instance"
+      ]
+    },
+    {
+      "rule_id": "SQL-002",
+      "resource_types": [
+        "google_sql_database_instance"
+      ]
+    },
+    {
+      "rule_id": "SQL-003",
+      "resource_types": [
+        "google_sql_database_instance"
+      ]
+    },
+    {
+      "rule_id": "SQL-004",
+      "resource_types": [
+        "google_sql_database_instance"
+      ]
+    },
+    {
+      "rule_id": "GCE-001",
+      "resource_types": [
+        "google_compute_firewall"
+      ]
+    },
+    {
+      "rule_id": "GCE-003",
+      "resource_types": [
+        "google_compute_instance"
+      ]
+    },
+    {
+      "rule_id": "GCE-004",
+      "resource_types": [
+        "google_compute_instance"
+      ]
+    },
+    {
+      "rule_id": "RUN-001",
+      "resource_types": [
+        "google_cloud_run_service_iam_member",
+        "google_cloud_run_service_iam_binding"
+      ]
+    },
+    {
+      "rule_id": "GKE-001",
+      "resource_types": [
+        "google_container_cluster"
+      ]
+    },
+    {
+      "rule_id": "GKE-002",
+      "resource_types": [
+        "google_container_cluster"
+      ]
+    },
+    {
+      "rule_id": "GKE-003",
+      "resource_types": [
+        "google_container_cluster"
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "file": "google-docs-samples/cloud_sql/mysql_instance_backup_retention/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/cloud_sql/mysql_instance_backup_retention/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": [
+        {
+          "resource": "google_sql_database_instance.default",
+          "rule_id": "SQL-003"
+        }
+      ]
+    },
+    {
+      "file": "google-docs-samples/cloud_sql/mysql_instance_psc/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/cloud_sql/mysql_instance_psc/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": [
+        {
+          "resource": "google_sql_database_instance.default",
+          "rule_id": "SQL-003"
+        }
+      ]
+    },
+    {
+      "file": "google-docs-samples/cloud_sql/mysql_instance_ssm/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/cloud_sql/mysql_instance_ssm/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": [
+        {
+          "resource": "google_sql_database_instance.mysql_ssm_instance_name",
+          "rule_id": "SQL-003"
+        },
+        {
+          "resource": "google_sql_database_instance.mysql_ssm_instance_name",
+          "rule_id": "SQL-004"
+        }
+      ]
+    },
+    {
+      "file": "google-docs-samples/cloud_sql/mysql_instance_switchover/switchover_begin/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/cloud_sql/mysql_instance_switchover/switchover_begin/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": [
+        {
+          "resource": "google_sql_database_instance.dr-replica",
+          "rule_id": "SQL-003"
+        },
+        {
+          "resource": "google_sql_database_instance.original-primary",
+          "rule_id": "SQL-003"
+        }
+      ]
+    },
+    {
+      "file": "google-docs-samples/cloud_sql/postgres_instance_gcbdr_mr_pitr/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/cloud_sql/postgres_instance_gcbdr_mr_pitr/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": [
+        {
+          "resource": "google_sql_database_instance.default",
+          "rule_id": "SQL-003"
+        }
+      ]
+    },
+    {
+      "file": "google-docs-samples/cloud_sql/postgres_instance_labels/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/cloud_sql/postgres_instance_labels/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": [
+        {
+          "resource": "google_sql_database_instance.postgres_instance_labels",
+          "rule_id": "SQL-003"
+        },
+        {
+          "resource": "google_sql_database_instance.postgres_instance_labels",
+          "rule_id": "SQL-004"
+        }
+      ]
+    },
+    {
+      "file": "google-docs-samples/compute/disk_async_replication/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/compute/disk_async_replication/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": []
+    },
+    {
+      "file": "google-docs-samples/compute/external_address/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/compute/external_address/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": [
+        {
+          "resource": "google_compute_instance.default",
+          "rule_id": "GCE-004"
+        }
+      ]
+    },
+    {
+      "file": "google-docs-samples/compute/ha_controller_sole_tenancy/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/compute/ha_controller_sole_tenancy/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": []
+    },
+    {
+      "file": "google-docs-samples/compute/instance_custom_hostname/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/compute/instance_custom_hostname/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": [
+        {
+          "resource": "google_compute_instance.custom_hostname_instance",
+          "rule_id": "GCE-004"
+        }
+      ]
+    },
+    {
+      "file": "google-docs-samples/compute/quickstart/create_vm/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/compute/quickstart/create_vm/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": [
+        {
+          "resource": "google_compute_instance.default",
+          "rule_id": "GCE-004"
+        }
+      ]
+    },
+    {
+      "file": "google-docs-samples/compute/rmig_stateful_policy_ips/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/compute/rmig_stateful_policy_ips/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": []
+    },
+    {
+      "file": "google-docs-samples/gke/standard/regional/labels/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/gke/standard/regional/labels/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": [
+        {
+          "resource": "google_container_cluster.default",
+          "rule_id": "GKE-001"
+        },
+        {
+          "resource": "google_container_cluster.default",
+          "rule_id": "GKE-002"
+        }
+      ]
+    },
+    {
+      "file": "google-docs-samples/gke/standard/regional/managed_opentelemetry/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/gke/standard/regional/managed_opentelemetry/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": [
+        {
+          "resource": "google_container_cluster.default",
+          "rule_id": "GKE-001"
+        },
+        {
+          "resource": "google_container_cluster.default",
+          "rule_id": "GKE-002"
+        }
+      ]
+    },
+    {
+      "file": "google-docs-samples/gke/standard/regional/ray/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/gke/standard/regional/ray/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": [
+        {
+          "resource": "google_container_cluster.default",
+          "rule_id": "GKE-001"
+        },
+        {
+          "resource": "google_container_cluster.default",
+          "rule_id": "GKE-002"
+        }
+      ]
+    },
+    {
+      "file": "google-docs-samples/gke/standard/zonal/dws/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/gke/standard/zonal/dws/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": [
+        {
+          "resource": "google_container_cluster.default",
+          "rule_id": "GKE-001"
+        },
+        {
+          "resource": "google_container_cluster.default",
+          "rule_id": "GKE-002"
+        }
+      ]
+    },
+    {
+      "file": "google-docs-samples/gke/standard/zonal/multi-zone/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/gke/standard/zonal/multi-zone/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": [
+        {
+          "resource": "google_container_cluster.default",
+          "rule_id": "GKE-001"
+        },
+        {
+          "resource": "google_container_cluster.default",
+          "rule_id": "GKE-002"
+        }
+      ]
+    },
+    {
+      "file": "google-docs-samples/gke/standard/zonal/single-zone/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/gke/standard/zonal/single-zone/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": [
+        {
+          "resource": "google_container_cluster.default",
+          "rule_id": "GKE-001"
+        },
+        {
+          "resource": "google_container_cluster.default",
+          "rule_id": "GKE-002"
+        }
+      ]
+    },
+    {
+      "file": "google-docs-samples/run/cloud_run_configuration_concurrency/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/run/cloud_run_configuration_concurrency/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": []
+    },
+    {
+      "file": "google-docs-samples/run/cloud_run_configuration_labels/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/run/cloud_run_configuration_labels/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": []
+    },
+    {
+      "file": "google-docs-samples/run/connect_cloud_sql/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/run/connect_cloud_sql/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": [
+        {
+          "resource": "google_sql_database_instance.default",
+          "rule_id": "SQL-003"
+        },
+        {
+          "resource": "google_sql_database_instance.default",
+          "rule_id": "SQL-004"
+        }
+      ]
+    },
+    {
+      "file": "google-docs-samples/run/custom_domain_mapping/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/run/custom_domain_mapping/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": []
+    },
+    {
+      "file": "google-docs-samples/run/healthchecks_liveness_probe_http/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/run/healthchecks_liveness_probe_http/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": []
+    },
+    {
+      "file": "google-docs-samples/run/system_packages/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/run/system_packages/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": [
+        {
+          "resource": "google_cloud_run_service_iam_member.allow_unauthenticated",
+          "rule_id": "RUN-001"
+        }
+      ]
+    },
+    {
+      "file": "google-docs-samples/storage/make_data_public/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/storage/make_data_public/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": [
+        {
+          "resource": "google_storage_bucket.default",
+          "rule_id": "GCS-003"
+        },
+        {
+          "resource": "google_storage_bucket.default",
+          "rule_id": "GCS-004"
+        },
+        {
+          "resource": "google_storage_bucket_iam_member.member",
+          "rule_id": "GCS-001"
+        }
+      ]
+    },
+    {
+      "file": "google-docs-samples/storage/new_bucket/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/storage/new_bucket/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": [
+        {
+          "resource": "google_storage_bucket.static",
+          "rule_id": "GCS-003"
+        },
+        {
+          "resource": "google_storage_bucket.static",
+          "rule_id": "GCS-004"
+        }
+      ]
+    },
+    {
+      "file": "google-docs-samples/storage/object_lifecycle_setting/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/storage/object_lifecycle_setting/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": [
+        {
+          "resource": "google_storage_bucket.auto_expire",
+          "rule_id": "GCS-002"
+        },
+        {
+          "resource": "google_storage_bucket.auto_expire",
+          "rule_id": "GCS-003"
+        },
+        {
+          "resource": "google_storage_bucket.auto_expire",
+          "rule_id": "GCS-004"
+        }
+      ]
+    },
+    {
+      "file": "google-docs-samples/storage/pubsub_notifications/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/storage/pubsub_notifications/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": [
+        {
+          "resource": "google_storage_bucket.bucket",
+          "rule_id": "GCS-003"
+        },
+        {
+          "resource": "google_storage_bucket.bucket",
+          "rule_id": "GCS-004"
+        }
+      ]
+    },
+    {
+      "file": "google-docs-samples/storage/remote_terraform_backend_template/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/storage/remote_terraform_backend_template/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": []
+    },
+    {
+      "file": "google-docs-samples/storage/static_website/main.tf",
+      "source_url": "https://github.com/terraform-google-modules/terraform-docs-samples/blob/044aade264f9207e204d4e600d2e3a494a1a5d6e/storage/static_website/main.tf",
+      "commit": "044aade264f9207e204d4e600d2e3a494a1a5d6e",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": [
+        {
+          "resource": "google_storage_bucket.static_website",
+          "rule_id": "GCS-003"
+        },
+        {
+          "resource": "google_storage_bucket.static_website",
+          "rule_id": "GCS-004"
+        },
+        {
+          "resource": "google_storage_bucket_iam_member.public_rule",
+          "rule_id": "GCS-001"
+        }
+      ]
+    },
+    {
+      "file": "terragoat/terraform/gcp/big_data.tf",
+      "source_url": "https://github.com/bridgecrewio/terragoat/blob/729f8da62c6a85ce4af5ad3d123de97776d954c4/terraform/gcp/big_data.tf",
+      "commit": "729f8da62c6a85ce4af5ad3d123de97776d954c4",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": [
+        {
+          "resource": "google_sql_database_instance.master_instance",
+          "rule_id": "SQL-001"
+        },
+        {
+          "resource": "google_sql_database_instance.master_instance",
+          "rule_id": "SQL-002"
+        },
+        {
+          "resource": "google_sql_database_instance.master_instance",
+          "rule_id": "SQL-003"
+        },
+        {
+          "resource": "google_sql_database_instance.master_instance",
+          "rule_id": "SQL-004"
+        }
+      ]
+    },
+    {
+      "file": "terragoat/terraform/gcp/gcs.tf",
+      "source_url": "https://github.com/bridgecrewio/terragoat/blob/729f8da62c6a85ce4af5ad3d123de97776d954c4/terraform/gcp/gcs.tf",
+      "commit": "729f8da62c6a85ce4af5ad3d123de97776d954c4",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": [
+        {
+          "resource": "google_storage_bucket.terragoat_website",
+          "rule_id": "GCS-002"
+        },
+        {
+          "resource": "google_storage_bucket.terragoat_website",
+          "rule_id": "GCS-003"
+        },
+        {
+          "resource": "google_storage_bucket.terragoat_website",
+          "rule_id": "GCS-004"
+        },
+        {
+          "resource": "google_storage_bucket_iam_binding.allow_public_read",
+          "rule_id": "GCS-001"
+        }
+      ]
+    },
+    {
+      "file": "terragoat/terraform/gcp/gke.tf",
+      "source_url": "https://github.com/bridgecrewio/terragoat/blob/729f8da62c6a85ce4af5ad3d123de97776d954c4/terraform/gcp/gke.tf",
+      "commit": "729f8da62c6a85ce4af5ad3d123de97776d954c4",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": [
+        {
+          "resource": "google_container_cluster.workload_cluster",
+          "rule_id": "GKE-001"
+        },
+        {
+          "resource": "google_container_cluster.workload_cluster",
+          "rule_id": "GKE-002"
+        },
+        {
+          "resource": "google_container_cluster.workload_cluster",
+          "rule_id": "GKE-003"
+        }
+      ]
+    },
+    {
+      "file": "terragoat/terraform/gcp/instances.tf",
+      "source_url": "https://github.com/bridgecrewio/terragoat/blob/729f8da62c6a85ce4af5ad3d123de97776d954c4/terraform/gcp/instances.tf",
+      "commit": "729f8da62c6a85ce4af5ad3d123de97776d954c4",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": [
+        {
+          "resource": "google_compute_instance.server",
+          "rule_id": "GCE-004"
+        }
+      ]
+    },
+    {
+      "file": "terragoat/terraform/gcp/networks.tf",
+      "source_url": "https://github.com/bridgecrewio/terragoat/blob/729f8da62c6a85ce4af5ad3d123de97776d954c4/terraform/gcp/networks.tf",
+      "commit": "729f8da62c6a85ce4af5ad3d123de97776d954c4",
+      "license": "Apache-2.0",
+      "labelled_by": "Checkov 3.4.7",
+      "labelled_on": "2026-11-23",
+      "expected_findings": [
+        {
+          "resource": "google_compute_firewall.allow_all",
+          "rule_id": "GCE-001"
+        }
+      ]
+    }
+  ]
+}

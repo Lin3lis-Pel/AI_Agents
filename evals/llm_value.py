@@ -140,12 +140,12 @@ def review_without_llm(samples: list[Sample], settings: Settings) -> list[tuple[
         return [(sample, run_review(sample.terraform, deps=deps)) for sample in samples]
 
 
-def enriched_rows(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def enriched_rows(records: list[dict[str, Any]], config: str = "full") -> list[dict[str, Any]]:
     """One row per saved review whose text was kept, with its recommendations measured."""
     rows = []
     for record in records:
         judged = record.get("judge_input")
-        if record.get("config") != "full" or not judged:
+        if record.get("config") != config or not judged:
             continue
         facts = facts_by_resource(judged["user_input"])
         summary, lines = split_advice(judged["advisory_text"])

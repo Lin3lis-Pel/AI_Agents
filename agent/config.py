@@ -21,12 +21,19 @@ class Settings(BaseModel):
     model: str = DEFAULT_MODEL
     temperature: float | None = 0.0  # None = do not send the parameter
     seed: int | None = 42  # None = do not send the parameter
-    llm_timeout_s: float = 60.0
+    llm_timeout_s: float = 60.0  # one attempt
     llm_max_retries: int = 2
+    # Total time limits. One attempt's timeout does not limit a step: the client retries,
+    # and a provider that keeps the connection alive never times out at all. In the saved
+    # runs of 2026-11-10 two of 420 report-writing steps took longer than 90 s (141, 628).
+    llm_step_deadline_s: float = Field(default=90.0, gt=0)
+    review_deadline_s: float = Field(default=180.0, gt=0)
     extra_instructions: str = ""  # developer-only addition to the report prompt
+    report_prompt_path: Path | None = None  # evals only: another write_report prompt
 
     # Research loop (also the ablation switches)
     use_rag: bool = True
+    use_grading: bool = True  # off = every retrieved passage goes to the report writer
     max_rewrites: int = Field(default=2, ge=0, le=2)
     max_queries: int = Field(default=4, ge=1, le=8)
     retrieval_k: int = Field(default=4, ge=1, le=10)

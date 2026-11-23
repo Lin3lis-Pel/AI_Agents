@@ -81,6 +81,7 @@ describe("Report with a budget finding", () => {
       rule_id: "COST-BUDGET",
       category: "cost" as const,
       deprioritized: false,
+      terraform_fields: [],
     };
     render(<Report report={{ ...REPORT, findings: [...REPORT.findings, budget] }} />);
 

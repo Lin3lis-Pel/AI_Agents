@@ -9,6 +9,8 @@ __pycache__/
 .venv/
 .pytest_cache/
 .ruff_cache/
+.coverage
+coverage.xml
 
 # local data built at runtime
 data/

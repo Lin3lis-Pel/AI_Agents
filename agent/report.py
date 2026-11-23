@@ -196,7 +196,9 @@ def render_markdown(report: ReviewReport) -> str:
     if report.warnings:
         lines.append("")
     lines += _findings_section("Security findings", report.findings, security=True)
-    lines += _findings_section("Cost and sizing recommendations", report.findings, security=False)
+    lines += _findings_section(
+        "Cost, sizing and simplification recommendations", report.findings, security=False
+    )
     lines += _cost_section(report.cost_estimate)
     if report.unsupported_resources:
         lines += ["## Not reviewed (unsupported resource types)", ""]

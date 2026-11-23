@@ -8,6 +8,13 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
     include: ["**/*.test.{ts,tsx}"],
-    exclude: ["node_modules", ".next"],
+    exclude: ["node_modules", ".next", "e2e"],
+    coverage: {
+      provider: "v8",
+      include: ["components/**/*.tsx", "lib/**/*.ts"],
+      exclude: ["**/*.test.*", "lib/fixtures.ts", "lib/*.d.ts", "lib/types.ts"],
+      // The measured values when this was added, rounded down.
+      thresholds: { statements: 85, branches: 75, functions: 85, lines: 85 },
+    },
   },
 });

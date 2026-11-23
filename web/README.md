@@ -25,9 +25,11 @@ Requests to `/api/*` are forwarded to the Python API by the rewrite in
 ## Check
 
 ```bash
-npm test          # component tests (Vitest + React Testing Library), no servers needed
+npm test              # component tests (Vitest + React Testing Library), no servers needed
 npm run lint
-npx tsc --noEmit
+npm run typecheck
+npm run types:check   # the generated types match lib/openapi.json
+npm run build && npm run test:e2e   # browser tests; the real API must not be running
 ```
 
 ## Layout
@@ -37,9 +39,14 @@ app/            page, layout and styles
 components/     Intro, ReviewApp, Progress, Report, FeedbackForm, ProjectMemory,
                 AdvancedSettings, each with its test next to it
 lib/api.ts      the only place that calls the Python API
-lib/types.ts    the API's JSON shapes; a Python test keeps them equal to the models
+lib/openapi.json, lib/api-schema.d.ts
+                generated from the Python models: `uv run python -m api.schema` in the
+                repository root, then `npm run types`. Do not edit
+lib/types.ts    short names for the generated types
+e2e/            browser tests (Playwright)
 lib/labels.ts   plain-language names for services, steps and severities
 ```
 
-The tests fake only the network call. `tests/api/test_contract.py` in the Python project
-fails when a field of the report exists on one side and not on the other.
+The component tests fake only the network call. The browser tests fake only the LLM
+(`tests/e2e_server.py`). `tests/api/test_contract.py` in the Python project fails when the
+saved schema no longer matches the models.

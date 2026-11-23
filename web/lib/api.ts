@@ -8,11 +8,19 @@ import type {
   ProjectMemory,
   ReviewEvent,
   ReviewRequest,
+  SampleFile,
+  SampleList,
 } from "./types";
 
 const UNREACHABLE =
   "Could not reach the review service. Check that the Python API is running " +
   "(uv run python -m api.server) and try again.";
+const INTERRUPTED =
+  "The connection to the review service was lost before the report arrived. " +
+  "Please run the review again.";
+const UNREADABLE =
+  "The review service sent an answer this page could not read. Please run the review again.";
+const EVENT_TYPES = ["step", "report", "rejected", "error"];
 
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(path);
@@ -32,11 +40,10 @@ async function sendJson<T>(path: string, method: "POST" | "PUT", body: unknown):
 
 export const getCapabilities = () => getJson<Capabilities>("/api/capabilities");
 
-export const getSamples = async () =>
-  (await getJson<{ samples: string[] }>("/api/samples")).samples;
+export const getSamples = async () => (await getJson<SampleList>("/api/samples")).samples;
 
 export const getSample = async (name: string) =>
-  (await getJson<{ terraform: string }>(`/api/samples/${name}`)).terraform;
+  (await getJson<SampleFile>(`/api/samples/${name}`)).terraform;
 
 export const getMemory = (project: string) =>
   getJson<ProjectMemory>(`/api/projects/${encodeURIComponent(project)}/memory`);
@@ -51,8 +58,12 @@ export const sendFeedback = (reviewId: string, feedback: FeedbackChoice[]) =>
 
 /**
  * Run a review. The API answers with one JSON event per line, sent as each step finishes,
- * so this yields events while the review is still running. A request that fails becomes
- * one `error` event, so the screen has a single way to show problems.
+ * so this yields events while the review is still running.
+ *
+ * It never throws, and its last event is always the outcome: a report, or a problem. A
+ * request that fails, a connection that breaks, a line that is not JSON and a stream that
+ * ends too early all become one `error` event, so the screen has a single way to show
+ * problems and cannot be left waiting.
  */
 export async function* streamReview(request: ReviewRequest): AsyncGenerator<ReviewEvent> {
   let response: Response;
@@ -63,32 +74,62 @@ export async function* streamReview(request: ReviewRequest): AsyncGenerator<Revi
       body: JSON.stringify(request),
     });
   } catch {
-    yield { type: "error", message: UNREACHABLE };
+    yield problem(UNREACHABLE);
     return;
   }
   if (!response.ok || !response.body) {
-    const invalid = response.status === 422;
-    yield {
-      type: "error",
-      message: invalid
+    yield problem(
+      response.status === 422
         ? "The request was not accepted. Check the project name and the size of the file."
         : UNREACHABLE,
-    };
+    );
     return;
   }
+  try {
+    for await (const line of readLines(response.body)) {
+      const event = parseEvent(line);
+      yield event;
+      if (event.type !== "step") return;
+    }
+    yield problem(INTERRUPTED); // the stream ended, but the outcome never came
+  } catch (error) {
+    yield problem(error instanceof UnreadableEvent ? UNREADABLE : INTERRUPTED);
+  }
+}
 
-  const reader = response.body.getReader();
+class UnreadableEvent extends Error {}
+
+const problem = (message: string): ReviewEvent => ({ type: "error", message });
+
+function parseEvent(line: string): ReviewEvent {
+  let event: unknown;
+  try {
+    event = JSON.parse(line);
+  } catch {
+    throw new UnreadableEvent();
+  }
+  const type = (event as { type?: unknown } | null)?.type;
+  if (typeof type !== "string" || !EVENT_TYPES.includes(type)) throw new UnreadableEvent();
+  return event as ReviewEvent;
+}
+
+/** The non-empty lines of a response body. A line may arrive in several pieces. */
+async function* readLines(body: ReadableStream<Uint8Array>): AsyncGenerator<string> {
+  const reader = body.getReader();
   const decoder = new TextDecoder();
   let pending = "";
-  for (;;) {
-    const { done, value } = await reader.read();
-    pending += decoder.decode(value, { stream: !done });
-    const lines = pending.split("\n");
-    pending = lines.pop() ?? ""; // the last piece may be half a line
-    for (const line of lines) {
-      if (line.trim()) yield JSON.parse(line) as ReviewEvent;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      pending += decoder.decode(value, { stream: !done });
+      const lines = pending.split("\n");
+      pending = lines.pop() ?? ""; // the last piece may be half a line
+      for (const line of lines) if (line.trim()) yield line;
+      if (done) break;
     }
-    if (done) break;
+    if (pending.trim()) yield pending;
+  } finally {
+    // Also when the caller stops early. A broken stream may refuse: nothing left to free.
+    reader.cancel().catch(() => {});
   }
-  if (pending.trim()) yield JSON.parse(pending) as ReviewEvent;
 }

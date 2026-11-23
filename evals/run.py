@@ -30,7 +30,7 @@ from agent.llm import get_chat_model, load_model_prices, resolve_provider
 from evals.dataset_loader import load_samples
 from evals.deterministic import run_deterministic
 from evals.judge import Judge
-from evals.llm_eval import CONFIGS, REACT, run_llm_eval, summarize
+from evals.llm_eval import ALL_CONFIGS, CONFIGS, REACT, run_llm_eval, summarize
 from evals.ragas_judge import RagasJudge
 from memory.store import MemoryStore
 from rag.ingest import build_store
@@ -119,7 +119,7 @@ def run_llm_part(args: argparse.Namespace, base: Settings, git: dict[str, Any]) 
         return None
     models = [m.strip() for m in args.models.split(",") if m.strip()]
     config_names = [c.strip() for c in args.configs.split(",") if c.strip()]
-    if unknown := set(config_names) - set(CONFIGS) - {REACT}:
+    if unknown := set(config_names) - set(ALL_CONFIGS) - {REACT}:
         raise SystemExit(f"Unknown configuration(s): {', '.join(sorted(unknown))}")
     # Ablations are run for the first model only, to keep the cost of a full run low.
     configs = {m: (config_names if i == 0 else ["full"]) for i, m in enumerate(models)}
@@ -162,7 +162,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--configs",
         default=",".join(CONFIGS),
-        help="for the first model; add `react` to also run the ReAct baseline",
+        help="for the first model; also: no_grade, prompt_specific, prompt_short, "
+        "and react for the ReAct baseline",
     )
     parser.add_argument("--runs", type=int, default=3, help="reviews per sample and config")
     parser.add_argument("--limit", type=int, default=0, help="use only the first N samples")

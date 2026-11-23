@@ -13,7 +13,7 @@ import json
 from typing import Any
 
 from agent.deps import Deps
-from agent.llm import LLMCallError, UsageRecord, call_json, model_name
+from agent.llm import LLMCallError, UsageRecord, model_name
 from agent.report import ReportDraft, build_report
 from agent.state import ReviewState
 from agent.summary import summarize_resources, wrap_data
@@ -53,8 +53,8 @@ def make_write_report(deps: Deps):
         new_usage: list[UsageRecord] = []
         errors: list[str] = []
         try:
-            draft, new_usage = call_json(
-                deps.llm,
+            draft, new_usage = deps.ask(
+                state,
                 "write_report",
                 system,
                 wrap_data(json.dumps(_payload(state), indent=1)),

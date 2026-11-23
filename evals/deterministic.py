@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from evals.dataset_loader import DATASET_DIR, Sample, default_region, load_samples
+from evals.heldout import heldout_metrics, load_heldout
 from evals.metrics import (
     Confusion,
     confusion,
@@ -20,6 +21,7 @@ from evals.metrics import (
     latency_stats,
     mean_reciprocal_rank,
 )
+from evals.rewrite_loop import load_hard_queries
 from rag.retriever import search_gcp_docs
 from tools.cost_estimator import estimate_cost
 from tools.models import Severity
@@ -102,6 +104,31 @@ def retrieval_metrics(store_dir: Path) -> dict[str, Any]:
     return result
 
 
+def hard_retrieval_metrics(store_dir: Path) -> dict[str, Any]:
+    """Hit rate on the hard queries, per kind, for the first search alone (no rewriting).
+
+    The queries no document answers are left out: the retriever always returns something,
+    and deciding that nothing is relevant is the grader's job (evals/rewrite_loop.py).
+    """
+    ranks: dict[str, list[int | None]] = {}
+    for hard in load_hard_queries():
+        if not hard.expected_docs:
+            continue
+        found = [_rank(hard.query, hard.service, doc, store_dir) for doc in hard.expected_docs]
+        best = min((rank for rank in found if rank is not None), default=None)
+        ranks.setdefault(hard.kind, []).append(best)
+        ranks.setdefault("all", []).append(best)
+    kinds = [kind for kind in ranks if kind != "all"] + ["all"]
+    return {
+        kind: {
+            "n_queries": len(ranks[kind]),
+            **{f"hit_rate_at_{k}": hit_rate(ranks[kind], k) for k in RETRIEVAL_KS},
+            "mrr": mean_reciprocal_rank(ranks[kind]),
+        }
+        for kind in kinds
+    }
+
+
 def tool_latency(samples: list[Sample], store_dir: Path, repeats: int = 20) -> dict[str, Any]:
     """How long the deterministic steps take, measured `repeats` times per sample."""
     prices = load_static_prices()
@@ -135,6 +162,8 @@ def run_deterministic(store_dir: Path, repeats: int = 20) -> dict[str, Any]:
         "n_samples": len(samples),
         "security": security_metrics(samples),
         "cost": cost_metrics(samples),
+        "heldout": heldout_metrics(load_heldout()),
         "retrieval": retrieval_metrics(store_dir),
+        "retrieval_hard": hard_retrieval_metrics(store_dir),
         "tool_latency": tool_latency(samples, store_dir, repeats),
     }

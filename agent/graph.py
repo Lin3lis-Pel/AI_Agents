@@ -29,6 +29,7 @@ from agent.nodes.save_feedback import make_save_feedback
 from agent.nodes.security_check import make_security_check
 from agent.nodes.write_report import make_write_report
 from agent.state import ReviewState
+from tools.logs import log_event, review_context
 
 DETERMINISTIC_NODES = ("parse", "security_check", "cost_estimate", "retrieve")
 LLM_NODES = ("plan_research", "grade_docs", "rewrite_query", "write_report")
@@ -37,12 +38,16 @@ Node = Callable[[ReviewState], dict[str, Any]]
 
 
 def timed(name: str, node: Node, clock: Callable[[], float]) -> Node:
-    """Wrap a node so the time it took is recorded in `state.timings[name]`."""
+    """Wrap a node so the time it took is recorded in `state.timings[name]` and logged,
+    and everything the node logs carries the review id."""
 
     def wrapper(state: ReviewState) -> dict[str, Any]:
-        start = clock()
-        update = dict(node(state))
-        update["timings"] = {name: clock() - start}
+        with review_context(state.review_id):
+            start = clock()
+            update = dict(node(state))
+            seconds = clock() - start
+            log_event("review.step", node=name, seconds=round(seconds, 4))
+        update["timings"] = {name: seconds}
         return update
 
     wrapper.__name__ = name

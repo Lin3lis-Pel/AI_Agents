@@ -1,0 +1,1785 @@
+{
+  "meta": {
+    "kind": "price_check",
+    "date_utc": "2026-11-23T21:18:59+00:00",
+    "git": {
+      "commit": "8e946ece385842005c37c633c52f575c33a7334b",
+      "dirty": true
+    },
+    "python": "3.11.9",
+    "platform": "Windows-10-10.0.26300-SP0",
+    "static_snapshot": "2026-11-10"
+  },
+  "summary": [
+    {
+      "service": "compute",
+      "n_prices": 64,
+      "n_off_by_over_1_pct": 0,
+      "mean_abs_error_pct": 0.0,
+      "max_abs_error_pct": 0.02
+    },
+    {
+      "service": "disk",
+      "n_prices": 24,
+      "n_off_by_over_1_pct": 0,
+      "mean_abs_error_pct": 0.0,
+      "max_abs_error_pct": 0.0
+    },
+    {
+      "service": "gcs",
+      "n_prices": 32,
+      "n_off_by_over_1_pct": 19,
+      "mean_abs_error_pct": 7.32,
+      "max_abs_error_pct": 38.08
+    },
+    {
+      "service": "gke",
+      "n_prices": 8,
+      "n_off_by_over_1_pct": 0,
+      "mean_abs_error_pct": 0.0,
+      "max_abs_error_pct": 0.0
+    },
+    {
+      "service": "run",
+      "n_prices": 32,
+      "n_off_by_over_1_pct": 20,
+      "mean_abs_error_pct": 5.62,
+      "max_abs_error_pct": 12.14
+    },
+    {
+      "service": "sql",
+      "n_prices": 48,
+      "n_off_by_over_1_pct": 18,
+      "mean_abs_error_pct": 3.72,
+      "max_abs_error_pct": 12.14
+    }
+  ],
+  "samples": [
+    {
+      "file": "vulnerable/gcs_public.tf",
+      "static_usd": 2.0,
+      "live_usd": 2.0,
+      "error_pct": 0.0
+    },
+    {
+      "file": "vulnerable/sql_open.tf",
+      "static_usd": 231.25,
+      "live_usd": 231.25,
+      "error_pct": 0.0
+    },
+    {
+      "file": "vulnerable/compute_open_ssh.tf",
+      "static_usd": 150.29,
+      "live_usd": 150.29,
+      "error_pct": 0.0
+    },
+    {
+      "file": "vulnerable/cloud_run_public_secret.tf",
+      "static_usd": 39.42,
+      "live_usd": 39.42,
+      "error_pct": 0.0
+    },
+    {
+      "file": "vulnerable/gke_insecure.tf",
+      "static_usd": 396.53,
+      "live_usd": 396.51,
+      "error_pct": 0.01
+    },
+    {
+      "file": "clean/gcs_clean.tf",
+      "static_usd": 1.1,
+      "live_usd": 1.0,
+      "error_pct": 10.0
+    },
+    {
+      "file": "clean/sql_clean.tf",
+      "static_usd": 57.98,
+      "live_usd": 52.71,
+      "error_pct": 10.0
+    },
+    {
+      "file": "clean/compute_clean.tf",
+      "static_usd": 26.46,
+      "live_usd": 26.46,
+      "error_pct": 0.0
+    },
+    {
+      "file": "clean/gke_clean.tf",
+      "static_usd": 190.84,
+      "live_usd": 190.84,
+      "error_pct": 0.0
+    },
+    {
+      "file": "mixed/web_stack.tf",
+      "static_usd": 124.32,
+      "live_usd": 123.39,
+      "error_pct": 0.75
+    }
+  ],
+  "prices": [
+    {
+      "key": "compute.e2.ram_gb_hour",
+      "service": "compute",
+      "region": "us-central1",
+      "static": 0.002924,
+      "live": 0.00292353,
+      "error_pct": 0.02
+    },
+    {
+      "key": "compute.e2.ram_gb_hour",
+      "service": "compute",
+      "region": "us-east1",
+      "static": 0.002924,
+      "live": 0.00292353,
+      "error_pct": 0.02
+    },
+    {
+      "key": "compute.e2.ram_gb_hour",
+      "service": "compute",
+      "region": "us-west1",
+      "static": 0.002924,
+      "live": 0.00292353,
+      "error_pct": 0.02
+    },
+    {
+      "key": "compute.e2.ram_gb_hour",
+      "service": "compute",
+      "region": "europe-west1",
+      "static": 0.003216,
+      "live": 0.00321609,
+      "error_pct": -0.0
+    },
+    {
+      "key": "compute.e2.ram_gb_hour",
+      "service": "compute",
+      "region": "europe-west4",
+      "static": 0.003218,
+      "live": 0.00321816,
+      "error_pct": -0.0
+    },
+    {
+      "key": "compute.e2.ram_gb_hour",
+      "service": "compute",
+      "region": "europe-north1",
+      "static": 0.003218,
+      "live": 0.00321816,
+      "error_pct": -0.0
+    },
+    {
+      "key": "compute.e2.ram_gb_hour",
+      "service": "compute",
+      "region": "europe-west3",
+      "static": 0.003766,
+      "live": 0.00376602,
+      "error_pct": -0.0
+    },
+    {
+      "key": "compute.e2.ram_gb_hour",
+      "service": "compute",
+      "region": "asia-southeast1",
+      "static": 0.003606,
+      "live": 0.00360594,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.e2.vcpu_hour",
+      "service": "compute",
+      "region": "us-central1",
+      "static": 0.021812,
+      "live": 0.02181159,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.e2.vcpu_hour",
+      "service": "compute",
+      "region": "us-east1",
+      "static": 0.021812,
+      "live": 0.02181159,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.e2.vcpu_hour",
+      "service": "compute",
+      "region": "us-west1",
+      "static": 0.021812,
+      "live": 0.02181159,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.e2.vcpu_hour",
+      "service": "compute",
+      "region": "europe-west1",
+      "static": 0.023993,
+      "live": 0.02399337,
+      "error_pct": -0.0
+    },
+    {
+      "key": "compute.e2.vcpu_hour",
+      "service": "compute",
+      "region": "europe-west4",
+      "static": 0.024013,
+      "live": 0.02401338,
+      "error_pct": -0.0
+    },
+    {
+      "key": "compute.e2.vcpu_hour",
+      "service": "compute",
+      "region": "europe-north1",
+      "static": 0.024016,
+      "live": 0.02401614,
+      "error_pct": -0.0
+    },
+    {
+      "key": "compute.e2.vcpu_hour",
+      "service": "compute",
+      "region": "europe-west3",
+      "static": 0.028104,
+      "live": 0.0281037,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.e2.vcpu_hour",
+      "service": "compute",
+      "region": "asia-southeast1",
+      "static": 0.026909,
+      "live": 0.02690931,
+      "error_pct": -0.0
+    },
+    {
+      "key": "compute.n1.ram_gb_hour",
+      "service": "compute",
+      "region": "us-central1",
+      "static": 0.004237,
+      "live": 0.004237,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n1.ram_gb_hour",
+      "service": "compute",
+      "region": "us-east1",
+      "static": 0.004237,
+      "live": 0.004237,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n1.ram_gb_hour",
+      "service": "compute",
+      "region": "us-west1",
+      "static": 0.004237,
+      "live": 0.004237,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n1.ram_gb_hour",
+      "service": "compute",
+      "region": "europe-west1",
+      "static": 0.004661,
+      "live": 0.004661,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n1.ram_gb_hour",
+      "service": "compute",
+      "region": "europe-west4",
+      "static": 0.004664,
+      "live": 0.004664,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n1.ram_gb_hour",
+      "service": "compute",
+      "region": "europe-north1",
+      "static": 0.004664,
+      "live": 0.004664,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n1.ram_gb_hour",
+      "service": "compute",
+      "region": "europe-west3",
+      "static": 0.005458,
+      "live": 0.005458,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n1.ram_gb_hour",
+      "service": "compute",
+      "region": "asia-southeast1",
+      "static": 0.005226,
+      "live": 0.005226,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n1.vcpu_hour",
+      "service": "compute",
+      "region": "us-central1",
+      "static": 0.031611,
+      "live": 0.031611,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n1.vcpu_hour",
+      "service": "compute",
+      "region": "us-east1",
+      "static": 0.031611,
+      "live": 0.031611,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n1.vcpu_hour",
+      "service": "compute",
+      "region": "us-west1",
+      "static": 0.031611,
+      "live": 0.031611,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n1.vcpu_hour",
+      "service": "compute",
+      "region": "europe-west1",
+      "static": 0.034773,
+      "live": 0.034773,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n1.vcpu_hour",
+      "service": "compute",
+      "region": "europe-west4",
+      "static": 0.034802,
+      "live": 0.034802,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n1.vcpu_hour",
+      "service": "compute",
+      "region": "europe-north1",
+      "static": 0.034806,
+      "live": 0.034806,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n1.vcpu_hour",
+      "service": "compute",
+      "region": "europe-west3",
+      "static": 0.04073,
+      "live": 0.04073,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n1.vcpu_hour",
+      "service": "compute",
+      "region": "asia-southeast1",
+      "static": 0.038999,
+      "live": 0.038999,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2.ram_gb_hour",
+      "service": "compute",
+      "region": "us-central1",
+      "static": 0.004237,
+      "live": 0.004237,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2.ram_gb_hour",
+      "service": "compute",
+      "region": "us-east1",
+      "static": 0.004237,
+      "live": 0.004237,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2.ram_gb_hour",
+      "service": "compute",
+      "region": "us-west1",
+      "static": 0.004237,
+      "live": 0.004237,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2.ram_gb_hour",
+      "service": "compute",
+      "region": "europe-west1",
+      "static": 0.004661,
+      "live": 0.004661,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2.ram_gb_hour",
+      "service": "compute",
+      "region": "europe-west4",
+      "static": 0.004664,
+      "live": 0.004664,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2.ram_gb_hour",
+      "service": "compute",
+      "region": "europe-north1",
+      "static": 0.004664,
+      "live": 0.004664,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2.ram_gb_hour",
+      "service": "compute",
+      "region": "europe-west3",
+      "static": 0.005458,
+      "live": 0.005458,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2.ram_gb_hour",
+      "service": "compute",
+      "region": "asia-southeast1",
+      "static": 0.005226,
+      "live": 0.005226,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2.vcpu_hour",
+      "service": "compute",
+      "region": "us-central1",
+      "static": 0.031611,
+      "live": 0.031611,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2.vcpu_hour",
+      "service": "compute",
+      "region": "us-east1",
+      "static": 0.031611,
+      "live": 0.031611,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2.vcpu_hour",
+      "service": "compute",
+      "region": "us-west1",
+      "static": 0.031611,
+      "live": 0.031611,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2.vcpu_hour",
+      "service": "compute",
+      "region": "europe-west1",
+      "static": 0.034773,
+      "live": 0.034773,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2.vcpu_hour",
+      "service": "compute",
+      "region": "europe-west4",
+      "static": 0.034802,
+      "live": 0.034802,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2.vcpu_hour",
+      "service": "compute",
+      "region": "europe-north1",
+      "static": 0.034806,
+      "live": 0.034806,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2.vcpu_hour",
+      "service": "compute",
+      "region": "europe-west3",
+      "static": 0.04073,
+      "live": 0.04073,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2.vcpu_hour",
+      "service": "compute",
+      "region": "asia-southeast1",
+      "static": 0.038999,
+      "live": 0.038999,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2d.ram_gb_hour",
+      "service": "compute",
+      "region": "us-central1",
+      "static": 0.003686,
+      "live": 0.003686,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2d.ram_gb_hour",
+      "service": "compute",
+      "region": "us-east1",
+      "static": 0.003686,
+      "live": 0.003686,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2d.ram_gb_hour",
+      "service": "compute",
+      "region": "us-west1",
+      "static": 0.003686,
+      "live": 0.003686,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2d.ram_gb_hour",
+      "service": "compute",
+      "region": "europe-west1",
+      "static": 0.004055,
+      "live": 0.004055,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2d.ram_gb_hour",
+      "service": "compute",
+      "region": "europe-west4",
+      "static": 0.004058,
+      "live": 0.004058,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2d.ram_gb_hour",
+      "service": "compute",
+      "region": "europe-north1",
+      "static": 0.004058,
+      "live": 0.004058,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2d.ram_gb_hour",
+      "service": "compute",
+      "region": "europe-west3",
+      "static": 0.004748,
+      "live": 0.004748,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2d.ram_gb_hour",
+      "service": "compute",
+      "region": "asia-southeast1",
+      "static": 0.004547,
+      "live": 0.004547,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2d.vcpu_hour",
+      "service": "compute",
+      "region": "us-central1",
+      "static": 0.027502,
+      "live": 0.027502,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2d.vcpu_hour",
+      "service": "compute",
+      "region": "us-east1",
+      "static": 0.027502,
+      "live": 0.027502,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2d.vcpu_hour",
+      "service": "compute",
+      "region": "us-west1",
+      "static": 0.027502,
+      "live": 0.027502,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2d.vcpu_hour",
+      "service": "compute",
+      "region": "europe-west1",
+      "static": 0.030253,
+      "live": 0.030253,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2d.vcpu_hour",
+      "service": "compute",
+      "region": "europe-west4",
+      "static": 0.030278,
+      "live": 0.030278,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2d.vcpu_hour",
+      "service": "compute",
+      "region": "europe-north1",
+      "static": 0.030281,
+      "live": 0.030281,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2d.vcpu_hour",
+      "service": "compute",
+      "region": "europe-west3",
+      "static": 0.035435,
+      "live": 0.035435,
+      "error_pct": 0.0
+    },
+    {
+      "key": "compute.n2d.vcpu_hour",
+      "service": "compute",
+      "region": "asia-southeast1",
+      "static": 0.033929,
+      "live": 0.033929,
+      "error_pct": 0.0
+    },
+    {
+      "key": "disk.pd-balanced.gb_month",
+      "service": "disk",
+      "region": "us-central1",
+      "static": 0.1,
+      "live": 0.1,
+      "error_pct": 0.0
+    },
+    {
+      "key": "disk.pd-balanced.gb_month",
+      "service": "disk",
+      "region": "us-east1",
+      "static": 0.1,
+      "live": 0.1,
+      "error_pct": 0.0
+    },
+    {
+      "key": "disk.pd-balanced.gb_month",
+      "service": "disk",
+      "region": "us-west1",
+      "static": 0.1,
+      "live": 0.1,
+      "error_pct": 0.0
+    },
+    {
+      "key": "disk.pd-balanced.gb_month",
+      "service": "disk",
+      "region": "europe-west1",
+      "static": 0.1,
+      "live": 0.1,
+      "error_pct": 0.0
+    },
+    {
+      "key": "disk.pd-balanced.gb_month",
+      "service": "disk",
+      "region": "europe-west4",
+      "static": 0.11,
+      "live": 0.11,
+      "error_pct": 0.0
+    },
+    {
+      "key": "disk.pd-balanced.gb_month",
+      "service": "disk",
+      "region": "europe-north1",
+      "static": 0.11,
+      "live": 0.11,
+      "error_pct": 0.0
+    },
+    {
+      "key": "disk.pd-balanced.gb_month",
+      "service": "disk",
+      "region": "europe-west3",
+      "static": 0.12,
+      "live": 0.12,
+      "error_pct": 0.0
+    },
+    {
+      "key": "disk.pd-balanced.gb_month",
+      "service": "disk",
+      "region": "asia-southeast1",
+      "static": 0.11,
+      "live": 0.11,
+      "error_pct": 0.0
+    },
+    {
+      "key": "disk.pd-ssd.gb_month",
+      "service": "disk",
+      "region": "us-central1",
+      "static": 0.17,
+      "live": 0.17,
+      "error_pct": 0.0
+    },
+    {
+      "key": "disk.pd-ssd.gb_month",
+      "service": "disk",
+      "region": "us-east1",
+      "static": 0.17,
+      "live": 0.17,
+      "error_pct": 0.0
+    },
+    {
+      "key": "disk.pd-ssd.gb_month",
+      "service": "disk",
+      "region": "us-west1",
+      "static": 0.17,
+      "live": 0.17,
+      "error_pct": 0.0
+    },
+    {
+      "key": "disk.pd-ssd.gb_month",
+      "service": "disk",
+      "region": "europe-west1",
+      "static": 0.17,
+      "live": 0.17,
+      "error_pct": 0.0
+    },
+    {
+      "key": "disk.pd-ssd.gb_month",
+      "service": "disk",
+      "region": "europe-west4",
+      "static": 0.187,
+      "live": 0.187,
+      "error_pct": 0.0
+    },
+    {
+      "key": "disk.pd-ssd.gb_month",
+      "service": "disk",
+      "region": "europe-north1",
+      "static": 0.187,
+      "live": 0.187,
+      "error_pct": 0.0
+    },
+    {
+      "key": "disk.pd-ssd.gb_month",
+      "service": "disk",
+      "region": "europe-west3",
+      "static": 0.204,
+      "live": 0.204,
+      "error_pct": 0.0
+    },
+    {
+      "key": "disk.pd-ssd.gb_month",
+      "service": "disk",
+      "region": "asia-southeast1",
+      "static": 0.187,
+      "live": 0.187,
+      "error_pct": 0.0
+    },
+    {
+      "key": "disk.pd-standard.gb_month",
+      "service": "disk",
+      "region": "us-central1",
+      "static": 0.04,
+      "live": 0.04,
+      "error_pct": 0.0
+    },
+    {
+      "key": "disk.pd-standard.gb_month",
+      "service": "disk",
+      "region": "us-east1",
+      "static": 0.04,
+      "live": 0.04,
+      "error_pct": 0.0
+    },
+    {
+      "key": "disk.pd-standard.gb_month",
+      "service": "disk",
+      "region": "us-west1",
+      "static": 0.04,
+      "live": 0.04,
+      "error_pct": 0.0
+    },
+    {
+      "key": "disk.pd-standard.gb_month",
+      "service": "disk",
+      "region": "europe-west1",
+      "static": 0.04,
+      "live": 0.04,
+      "error_pct": 0.0
+    },
+    {
+      "key": "disk.pd-standard.gb_month",
+      "service": "disk",
+      "region": "europe-west4",
+      "static": 0.044,
+      "live": 0.044,
+      "error_pct": 0.0
+    },
+    {
+      "key": "disk.pd-standard.gb_month",
+      "service": "disk",
+      "region": "europe-north1",
+      "static": 0.044,
+      "live": 0.044,
+      "error_pct": 0.0
+    },
+    {
+      "key": "disk.pd-standard.gb_month",
+      "service": "disk",
+      "region": "europe-west3",
+      "static": 0.048,
+      "live": 0.048,
+      "error_pct": 0.0
+    },
+    {
+      "key": "disk.pd-standard.gb_month",
+      "service": "disk",
+      "region": "asia-southeast1",
+      "static": 0.044,
+      "live": 0.044,
+      "error_pct": 0.0
+    },
+    {
+      "key": "gcs.archive.gb_month",
+      "service": "gcs",
+      "region": "us-central1",
+      "static": 0.0012,
+      "live": 0.0012,
+      "error_pct": 0.0
+    },
+    {
+      "key": "gcs.archive.gb_month",
+      "service": "gcs",
+      "region": "us-east1",
+      "static": 0.0012,
+      "live": 0.0012,
+      "error_pct": 0.0
+    },
+    {
+      "key": "gcs.archive.gb_month",
+      "service": "gcs",
+      "region": "us-west1",
+      "static": 0.0012,
+      "live": 0.0012,
+      "error_pct": 0.0
+    },
+    {
+      "key": "gcs.archive.gb_month",
+      "service": "gcs",
+      "region": "europe-west1",
+      "static": 0.00132,
+      "live": 0.0012,
+      "error_pct": 10.0
+    },
+    {
+      "key": "gcs.archive.gb_month",
+      "service": "gcs",
+      "region": "europe-west4",
+      "static": 0.00132,
+      "live": 0.0012,
+      "error_pct": 10.0
+    },
+    {
+      "key": "gcs.archive.gb_month",
+      "service": "gcs",
+      "region": "europe-north1",
+      "static": 0.00132,
+      "live": 0.0012,
+      "error_pct": 10.0
+    },
+    {
+      "key": "gcs.archive.gb_month",
+      "service": "gcs",
+      "region": "europe-west3",
+      "static": 0.001548,
+      "live": 0.0025,
+      "error_pct": -38.08
+    },
+    {
+      "key": "gcs.archive.gb_month",
+      "service": "gcs",
+      "region": "asia-southeast1",
+      "static": 0.0014759999999999999,
+      "live": 0.0015,
+      "error_pct": -1.6
+    },
+    {
+      "key": "gcs.coldline.gb_month",
+      "service": "gcs",
+      "region": "us-central1",
+      "static": 0.004,
+      "live": 0.004,
+      "error_pct": 0.0
+    },
+    {
+      "key": "gcs.coldline.gb_month",
+      "service": "gcs",
+      "region": "us-east1",
+      "static": 0.004,
+      "live": 0.004,
+      "error_pct": 0.0
+    },
+    {
+      "key": "gcs.coldline.gb_month",
+      "service": "gcs",
+      "region": "us-west1",
+      "static": 0.004,
+      "live": 0.004,
+      "error_pct": 0.0
+    },
+    {
+      "key": "gcs.coldline.gb_month",
+      "service": "gcs",
+      "region": "europe-west1",
+      "static": 0.0044,
+      "live": 0.004,
+      "error_pct": 10.0
+    },
+    {
+      "key": "gcs.coldline.gb_month",
+      "service": "gcs",
+      "region": "europe-west4",
+      "static": 0.0044,
+      "live": 0.004,
+      "error_pct": 10.0
+    },
+    {
+      "key": "gcs.coldline.gb_month",
+      "service": "gcs",
+      "region": "europe-north1",
+      "static": 0.0044,
+      "live": 0.004,
+      "error_pct": 10.0
+    },
+    {
+      "key": "gcs.coldline.gb_month",
+      "service": "gcs",
+      "region": "europe-west3",
+      "static": 0.0051600000000000005,
+      "live": 0.006,
+      "error_pct": -14.0
+    },
+    {
+      "key": "gcs.coldline.gb_month",
+      "service": "gcs",
+      "region": "asia-southeast1",
+      "static": 0.00492,
+      "live": 0.005,
+      "error_pct": -1.6
+    },
+    {
+      "key": "gcs.nearline.gb_month",
+      "service": "gcs",
+      "region": "us-central1",
+      "static": 0.01,
+      "live": 0.01,
+      "error_pct": 0.0
+    },
+    {
+      "key": "gcs.nearline.gb_month",
+      "service": "gcs",
+      "region": "us-east1",
+      "static": 0.01,
+      "live": 0.01,
+      "error_pct": 0.0
+    },
+    {
+      "key": "gcs.nearline.gb_month",
+      "service": "gcs",
+      "region": "us-west1",
+      "static": 0.01,
+      "live": 0.01,
+      "error_pct": 0.0
+    },
+    {
+      "key": "gcs.nearline.gb_month",
+      "service": "gcs",
+      "region": "europe-west1",
+      "static": 0.011000000000000001,
+      "live": 0.01,
+      "error_pct": 10.0
+    },
+    {
+      "key": "gcs.nearline.gb_month",
+      "service": "gcs",
+      "region": "europe-west4",
+      "static": 0.011000000000000001,
+      "live": 0.01,
+      "error_pct": 10.0
+    },
+    {
+      "key": "gcs.nearline.gb_month",
+      "service": "gcs",
+      "region": "europe-north1",
+      "static": 0.011000000000000001,
+      "live": 0.01,
+      "error_pct": 10.0
+    },
+    {
+      "key": "gcs.nearline.gb_month",
+      "service": "gcs",
+      "region": "europe-west3",
+      "static": 0.0129,
+      "live": 0.013,
+      "error_pct": -0.77
+    },
+    {
+      "key": "gcs.nearline.gb_month",
+      "service": "gcs",
+      "region": "asia-southeast1",
+      "static": 0.0123,
+      "live": 0.01,
+      "error_pct": 23.0
+    },
+    {
+      "key": "gcs.standard.gb_month",
+      "service": "gcs",
+      "region": "us-central1",
+      "static": 0.02,
+      "live": 0.02,
+      "error_pct": 0.0
+    },
+    {
+      "key": "gcs.standard.gb_month",
+      "service": "gcs",
+      "region": "us-east1",
+      "static": 0.02,
+      "live": 0.02,
+      "error_pct": 0.0
+    },
+    {
+      "key": "gcs.standard.gb_month",
+      "service": "gcs",
+      "region": "us-west1",
+      "static": 0.02,
+      "live": 0.02,
+      "error_pct": 0.0
+    },
+    {
+      "key": "gcs.standard.gb_month",
+      "service": "gcs",
+      "region": "europe-west1",
+      "static": 0.022000000000000002,
+      "live": 0.02,
+      "error_pct": 10.0
+    },
+    {
+      "key": "gcs.standard.gb_month",
+      "service": "gcs",
+      "region": "europe-west4",
+      "static": 0.022000000000000002,
+      "live": 0.02,
+      "error_pct": 10.0
+    },
+    {
+      "key": "gcs.standard.gb_month",
+      "service": "gcs",
+      "region": "europe-north1",
+      "static": 0.022000000000000002,
+      "live": 0.02,
+      "error_pct": 10.0
+    },
+    {
+      "key": "gcs.standard.gb_month",
+      "service": "gcs",
+      "region": "europe-west3",
+      "static": 0.0258,
+      "live": 0.023,
+      "error_pct": 12.17
+    },
+    {
+      "key": "gcs.standard.gb_month",
+      "service": "gcs",
+      "region": "asia-southeast1",
+      "static": 0.0246,
+      "live": 0.02,
+      "error_pct": 23.0
+    },
+    {
+      "key": "gke.cluster_fee_hour",
+      "service": "gke",
+      "region": "us-central1",
+      "static": 0.1,
+      "live": 0.1,
+      "error_pct": 0.0
+    },
+    {
+      "key": "gke.cluster_fee_hour",
+      "service": "gke",
+      "region": "us-east1",
+      "static": 0.1,
+      "live": 0.1,
+      "error_pct": 0.0
+    },
+    {
+      "key": "gke.cluster_fee_hour",
+      "service": "gke",
+      "region": "us-west1",
+      "static": 0.1,
+      "live": 0.1,
+      "error_pct": 0.0
+    },
+    {
+      "key": "gke.cluster_fee_hour",
+      "service": "gke",
+      "region": "europe-west1",
+      "static": 0.1,
+      "live": 0.1,
+      "error_pct": 0.0
+    },
+    {
+      "key": "gke.cluster_fee_hour",
+      "service": "gke",
+      "region": "europe-west4",
+      "static": 0.1,
+      "live": 0.1,
+      "error_pct": 0.0
+    },
+    {
+      "key": "gke.cluster_fee_hour",
+      "service": "gke",
+      "region": "europe-north1",
+      "static": 0.1,
+      "live": 0.1,
+      "error_pct": 0.0
+    },
+    {
+      "key": "gke.cluster_fee_hour",
+      "service": "gke",
+      "region": "europe-west3",
+      "static": 0.1,
+      "live": 0.1,
+      "error_pct": 0.0
+    },
+    {
+      "key": "gke.cluster_fee_hour",
+      "service": "gke",
+      "region": "asia-southeast1",
+      "static": 0.1,
+      "live": 0.1,
+      "error_pct": 0.0
+    },
+    {
+      "key": "run.ram_gib_second_always",
+      "service": "run",
+      "region": "us-central1",
+      "static": 2e-06,
+      "live": 2e-06,
+      "error_pct": 0.0
+    },
+    {
+      "key": "run.ram_gib_second_always",
+      "service": "run",
+      "region": "us-east1",
+      "static": 2e-06,
+      "live": 2e-06,
+      "error_pct": 0.0
+    },
+    {
+      "key": "run.ram_gib_second_always",
+      "service": "run",
+      "region": "us-west1",
+      "static": 2e-06,
+      "live": 2e-06,
+      "error_pct": 0.0
+    },
+    {
+      "key": "run.ram_gib_second_always",
+      "service": "run",
+      "region": "europe-west1",
+      "static": 2.2e-06,
+      "live": 2e-06,
+      "error_pct": 10.0
+    },
+    {
+      "key": "run.ram_gib_second_always",
+      "service": "run",
+      "region": "europe-west4",
+      "static": 2.2e-06,
+      "live": 2e-06,
+      "error_pct": 10.0
+    },
+    {
+      "key": "run.ram_gib_second_always",
+      "service": "run",
+      "region": "europe-north1",
+      "static": 2.2e-06,
+      "live": 2e-06,
+      "error_pct": 10.0
+    },
+    {
+      "key": "run.ram_gib_second_always",
+      "service": "run",
+      "region": "europe-west3",
+      "static": 2.58e-06,
+      "live": 2.4e-06,
+      "error_pct": 7.5
+    },
+    {
+      "key": "run.ram_gib_second_always",
+      "service": "run",
+      "region": "asia-southeast1",
+      "static": 2.4599999999999997e-06,
+      "live": 2.4e-06,
+      "error_pct": 2.5
+    },
+    {
+      "key": "run.ram_gib_second_idle",
+      "service": "run",
+      "region": "us-central1",
+      "static": 2.5e-06,
+      "live": 2.5e-06,
+      "error_pct": 0.0
+    },
+    {
+      "key": "run.ram_gib_second_idle",
+      "service": "run",
+      "region": "us-east1",
+      "static": 2.5e-06,
+      "live": 2.5e-06,
+      "error_pct": 0.0
+    },
+    {
+      "key": "run.ram_gib_second_idle",
+      "service": "run",
+      "region": "us-west1",
+      "static": 2.5e-06,
+      "live": 2.5e-06,
+      "error_pct": 0.0
+    },
+    {
+      "key": "run.ram_gib_second_idle",
+      "service": "run",
+      "region": "europe-west1",
+      "static": 2.7500000000000004e-06,
+      "live": 2.5e-06,
+      "error_pct": 10.0
+    },
+    {
+      "key": "run.ram_gib_second_idle",
+      "service": "run",
+      "region": "europe-west4",
+      "static": 2.7500000000000004e-06,
+      "live": 2.5e-06,
+      "error_pct": 10.0
+    },
+    {
+      "key": "run.ram_gib_second_idle",
+      "service": "run",
+      "region": "europe-north1",
+      "static": 2.7500000000000004e-06,
+      "live": 2.5e-06,
+      "error_pct": 10.0
+    },
+    {
+      "key": "run.ram_gib_second_idle",
+      "service": "run",
+      "region": "europe-west3",
+      "static": 3.2250000000000005e-06,
+      "live": 3.5e-06,
+      "error_pct": -7.86
+    },
+    {
+      "key": "run.ram_gib_second_idle",
+      "service": "run",
+      "region": "asia-southeast1",
+      "static": 3.075e-06,
+      "live": 3.5e-06,
+      "error_pct": -12.14
+    },
+    {
+      "key": "run.vcpu_second_always",
+      "service": "run",
+      "region": "us-central1",
+      "static": 1.8e-05,
+      "live": 1.8e-05,
+      "error_pct": 0.0
+    },
+    {
+      "key": "run.vcpu_second_always",
+      "service": "run",
+      "region": "us-east1",
+      "static": 1.8e-05,
+      "live": 1.8e-05,
+      "error_pct": 0.0
+    },
+    {
+      "key": "run.vcpu_second_always",
+      "service": "run",
+      "region": "us-west1",
+      "static": 1.8e-05,
+      "live": 1.8e-05,
+      "error_pct": 0.0
+    },
+    {
+      "key": "run.vcpu_second_always",
+      "service": "run",
+      "region": "europe-west1",
+      "static": 1.9800000000000004e-05,
+      "live": 1.8e-05,
+      "error_pct": 10.0
+    },
+    {
+      "key": "run.vcpu_second_always",
+      "service": "run",
+      "region": "europe-west4",
+      "static": 1.9800000000000004e-05,
+      "live": 1.8e-05,
+      "error_pct": 10.0
+    },
+    {
+      "key": "run.vcpu_second_always",
+      "service": "run",
+      "region": "europe-north1",
+      "static": 1.9800000000000004e-05,
+      "live": 1.8e-05,
+      "error_pct": 10.0
+    },
+    {
+      "key": "run.vcpu_second_always",
+      "service": "run",
+      "region": "europe-west3",
+      "static": 2.322e-05,
+      "live": 2.16e-05,
+      "error_pct": 7.5
+    },
+    {
+      "key": "run.vcpu_second_always",
+      "service": "run",
+      "region": "asia-southeast1",
+      "static": 2.214e-05,
+      "live": 2.16e-05,
+      "error_pct": 2.5
+    },
+    {
+      "key": "run.vcpu_second_idle",
+      "service": "run",
+      "region": "us-central1",
+      "static": 2.5e-06,
+      "live": 2.5e-06,
+      "error_pct": 0.0
+    },
+    {
+      "key": "run.vcpu_second_idle",
+      "service": "run",
+      "region": "us-east1",
+      "static": 2.5e-06,
+      "live": 2.5e-06,
+      "error_pct": 0.0
+    },
+    {
+      "key": "run.vcpu_second_idle",
+      "service": "run",
+      "region": "us-west1",
+      "static": 2.5e-06,
+      "live": 2.5e-06,
+      "error_pct": 0.0
+    },
+    {
+      "key": "run.vcpu_second_idle",
+      "service": "run",
+      "region": "europe-west1",
+      "static": 2.7500000000000004e-06,
+      "live": 2.5e-06,
+      "error_pct": 10.0
+    },
+    {
+      "key": "run.vcpu_second_idle",
+      "service": "run",
+      "region": "europe-west4",
+      "static": 2.7500000000000004e-06,
+      "live": 2.5e-06,
+      "error_pct": 10.0
+    },
+    {
+      "key": "run.vcpu_second_idle",
+      "service": "run",
+      "region": "europe-north1",
+      "static": 2.7500000000000004e-06,
+      "live": 2.5e-06,
+      "error_pct": 10.0
+    },
+    {
+      "key": "run.vcpu_second_idle",
+      "service": "run",
+      "region": "europe-west3",
+      "static": 3.2250000000000005e-06,
+      "live": 3.5e-06,
+      "error_pct": -7.86
+    },
+    {
+      "key": "run.vcpu_second_idle",
+      "service": "run",
+      "region": "asia-southeast1",
+      "static": 3.075e-06,
+      "live": 3.5e-06,
+      "error_pct": -12.14
+    },
+    {
+      "key": "sql.db-f1-micro.hour",
+      "service": "sql",
+      "region": "us-central1",
+      "static": 0.0105,
+      "live": 0.0105,
+      "error_pct": 0.0
+    },
+    {
+      "key": "sql.db-f1-micro.hour",
+      "service": "sql",
+      "region": "us-east1",
+      "static": 0.0105,
+      "live": 0.0105,
+      "error_pct": 0.0
+    },
+    {
+      "key": "sql.db-f1-micro.hour",
+      "service": "sql",
+      "region": "us-west1",
+      "static": 0.0105,
+      "live": 0.0105,
+      "error_pct": 0.0
+    },
+    {
+      "key": "sql.db-f1-micro.hour",
+      "service": "sql",
+      "region": "europe-west1",
+      "static": 0.011550000000000001,
+      "live": 0.0105,
+      "error_pct": 10.0
+    },
+    {
+      "key": "sql.db-f1-micro.hour",
+      "service": "sql",
+      "region": "europe-west4",
+      "static": 0.011550000000000001,
+      "live": 0.0116,
+      "error_pct": -0.43
+    },
+    {
+      "key": "sql.db-f1-micro.hour",
+      "service": "sql",
+      "region": "europe-north1",
+      "static": 0.011550000000000001,
+      "live": 0.0116,
+      "error_pct": -0.43
+    },
+    {
+      "key": "sql.db-f1-micro.hour",
+      "service": "sql",
+      "region": "europe-west3",
+      "static": 0.013545000000000001,
+      "live": 0.0126,
+      "error_pct": 7.5
+    },
+    {
+      "key": "sql.db-f1-micro.hour",
+      "service": "sql",
+      "region": "asia-southeast1",
+      "static": 0.012915000000000001,
+      "live": 0.0147,
+      "error_pct": -12.14
+    },
+    {
+      "key": "sql.db-g1-small.hour",
+      "service": "sql",
+      "region": "us-central1",
+      "static": 0.035,
+      "live": 0.035,
+      "error_pct": 0.0
+    },
+    {
+      "key": "sql.db-g1-small.hour",
+      "service": "sql",
+      "region": "us-east1",
+      "static": 0.035,
+      "live": 0.035,
+      "error_pct": 0.0
+    },
+    {
+      "key": "sql.db-g1-small.hour",
+      "service": "sql",
+      "region": "us-west1",
+      "static": 0.035,
+      "live": 0.035,
+      "error_pct": 0.0
+    },
+    {
+      "key": "sql.db-g1-small.hour",
+      "service": "sql",
+      "region": "europe-west1",
+      "static": 0.038500000000000006,
+      "live": 0.035,
+      "error_pct": 10.0
+    },
+    {
+      "key": "sql.db-g1-small.hour",
+      "service": "sql",
+      "region": "europe-west4",
+      "static": 0.038500000000000006,
+      "live": 0.0385,
+      "error_pct": 0.0
+    },
+    {
+      "key": "sql.db-g1-small.hour",
+      "service": "sql",
+      "region": "europe-north1",
+      "static": 0.038500000000000006,
+      "live": 0.0385,
+      "error_pct": 0.0
+    },
+    {
+      "key": "sql.db-g1-small.hour",
+      "service": "sql",
+      "region": "europe-west3",
+      "static": 0.04515,
+      "live": 0.042,
+      "error_pct": 7.5
+    },
+    {
+      "key": "sql.db-g1-small.hour",
+      "service": "sql",
+      "region": "asia-southeast1",
+      "static": 0.043050000000000005,
+      "live": 0.049,
+      "error_pct": -12.14
+    },
+    {
+      "key": "sql.ram_gb_hour",
+      "service": "sql",
+      "region": "us-central1",
+      "static": 0.007,
+      "live": 0.007,
+      "error_pct": 0.0
+    },
+    {
+      "key": "sql.ram_gb_hour",
+      "service": "sql",
+      "region": "us-east1",
+      "static": 0.007,
+      "live": 0.007,
+      "error_pct": 0.0
+    },
+    {
+      "key": "sql.ram_gb_hour",
+      "service": "sql",
+      "region": "us-west1",
+      "static": 0.007,
+      "live": 0.007,
+      "error_pct": 0.0
+    },
+    {
+      "key": "sql.ram_gb_hour",
+      "service": "sql",
+      "region": "europe-west1",
+      "static": 0.007700000000000001,
+      "live": 0.007,
+      "error_pct": 10.0
+    },
+    {
+      "key": "sql.ram_gb_hour",
+      "service": "sql",
+      "region": "europe-west4",
+      "static": 0.007700000000000001,
+      "live": 0.0077,
+      "error_pct": 0.0
+    },
+    {
+      "key": "sql.ram_gb_hour",
+      "service": "sql",
+      "region": "europe-north1",
+      "static": 0.007700000000000001,
+      "live": 0.0077,
+      "error_pct": 0.0
+    },
+    {
+      "key": "sql.ram_gb_hour",
+      "service": "sql",
+      "region": "europe-west3",
+      "static": 0.00903,
+      "live": 0.0084,
+      "error_pct": 7.5
+    },
+    {
+      "key": "sql.ram_gb_hour",
+      "service": "sql",
+      "region": "asia-southeast1",
+      "static": 0.00861,
+      "live": 0.0098,
+      "error_pct": -12.14
+    },
+    {
+      "key": "sql.storage.hdd.gb_month",
+      "service": "sql",
+      "region": "us-central1",
+      "static": 0.09,
+      "live": 0.09,
+      "error_pct": 0.0
+    },
+    {
+      "key": "sql.storage.hdd.gb_month",
+      "service": "sql",
+      "region": "us-east1",
+      "static": 0.09,
+      "live": 0.09,
+      "error_pct": 0.0
+    },
+    {
+      "key": "sql.storage.hdd.gb_month",
+      "service": "sql",
+      "region": "us-west1",
+      "static": 0.09,
+      "live": 0.09,
+      "error_pct": 0.0
+    },
+    {
+      "key": "sql.storage.hdd.gb_month",
+      "service": "sql",
+      "region": "europe-west1",
+      "static": 0.099,
+      "live": 0.09,
+      "error_pct": 10.0
+    },
+    {
+      "key": "sql.storage.hdd.gb_month",
+      "service": "sql",
+      "region": "europe-west4",
+      "static": 0.099,
+      "live": 0.099,
+      "error_pct": 0.0
+    },
+    {
+      "key": "sql.storage.hdd.gb_month",
+      "service": "sql",
+      "region": "europe-north1",
+      "static": 0.099,
+      "live": 0.099,
+      "error_pct": 0.0
+    },
+    {
+      "key": "sql.storage.hdd.gb_month",
+      "service": "sql",
+      "region": "europe-west3",
+      "static": 0.1161,
+      "live": 0.108,
+      "error_pct": 7.5
+    },
+    {
+      "key": "sql.storage.hdd.gb_month",
+      "service": "sql",
+      "region": "asia-southeast1",
+      "static": 0.11069999999999999,
+      "live": 0.126,
+      "error_pct": -12.14
+    },
+    {
+      "key": "sql.storage.ssd.gb_month",
+      "service": "sql",
+      "region": "us-central1",
+      "static": 0.17,
+      "live": 0.17,
+      "error_pct": 0.0
+    },
+    {
+      "key": "sql.storage.ssd.gb_month",
+      "service": "sql",
+      "region": "us-east1",
+      "static": 0.17,
+      "live": 0.17,
+      "error_pct": 0.0
+    },
+    {
+      "key": "sql.storage.ssd.gb_month",
+      "service": "sql",
+      "region": "us-west1",
+      "static": 0.17,
+      "live": 0.17,
+      "error_pct": 0.0
+    },
+    {
+      "key": "sql.storage.ssd.gb_month",
+      "service": "sql",
+      "region": "europe-west1",
+      "static": 0.18700000000000003,
+      "live": 0.17,
+      "error_pct": 10.0
+    },
+    {
+      "key": "sql.storage.ssd.gb_month",
+      "service": "sql",
+      "region": "europe-west4",
+      "static": 0.18700000000000003,
+      "live": 0.187,
+      "error_pct": 0.0
+    },
+    {
+      "key": "sql.storage.ssd.gb_month",
+      "service": "sql",
+      "region": "europe-north1",
+      "static": 0.18700000000000003,
+      "live": 0.187,
+      "error_pct": 0.0
+    },
+    {
+      "key": "sql.storage.ssd.gb_month",
+      "service": "sql",
+      "region": "europe-west3",
+      "static": 0.21930000000000002,
+      "live": 0.204,
+      "error_pct": 7.5
+    },
+    {
+      "key": "sql.storage.ssd.gb_month",
+      "service": "sql",
+      "region": "asia-southeast1",
+      "static": 0.2091,
+      "live": 0.238,
+      "error_pct": -12.14
+    },
+    {
+      "key": "sql.vcpu_hour",
+      "service": "sql",
+      "region": "us-central1",
+      "static": 0.0413,
+      "live": 0.0413,
+      "error_pct": 0.0
+    },
+    {
+      "key": "sql.vcpu_hour",
+      "service": "sql",
+      "region": "us-east1",
+      "static": 0.0413,
+      "live": 0.0413,
+      "error_pct": 0.0
+    },
+    {
+      "key": "sql.vcpu_hour",
+      "service": "sql",
+      "region": "us-west1",
+      "static": 0.0413,
+      "live": 0.0413,
+      "error_pct": 0.0
+    },
+    {
+      "key": "sql.vcpu_hour",
+      "service": "sql",
+      "region": "europe-west1",
+      "static": 0.045430000000000005,
+      "live": 0.0413,
+      "error_pct": 10.0
+    },
+    {
+      "key": "sql.vcpu_hour",
+      "service": "sql",
+      "region": "europe-west4",
+      "static": 0.045430000000000005,
+      "live": 0.0454,
+      "error_pct": 0.07
+    },
+    {
+      "key": "sql.vcpu_hour",
+      "service": "sql",
+      "region": "europe-north1",
+      "static": 0.045430000000000005,
+      "live": 0.0454,
+      "error_pct": 0.07
+    },
+    {
+      "key": "sql.vcpu_hour",
+      "service": "sql",
+      "region": "europe-west3",
+      "static": 0.053277000000000005,
+      "live": 0.0496,
+      "error_pct": 7.41
+    },
+    {
+      "key": "sql.vcpu_hour",
+      "service": "sql",
+      "region": "asia-southeast1",
+      "static": 0.050799000000000004,
+      "live": 0.0578,
+      "error_pct": -12.11
+    }
+  ]
+}

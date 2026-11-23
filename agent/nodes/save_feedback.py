@@ -12,6 +12,7 @@ from typing import Any
 
 from agent.deps import Deps
 from agent.state import ReviewState
+from tools.logs import log_failure
 
 
 def make_save_feedback(deps: Deps):
@@ -25,6 +26,7 @@ def make_save_feedback(deps: Deps):
                 state.review_id, state.project_id, state.report.model_dump(mode="json")
             )
         except sqlite3.Error as exc:
+            log_failure("save_feedback.failed", exc)
             return {"errors": [f"Could not save to memory ({type(exc).__name__})."]}
         return {}
 

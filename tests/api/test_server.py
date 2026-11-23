@@ -86,6 +86,39 @@ def test_feedback_finishes_a_review_and_maps_the_outcome_to_a_status(make_client
     assert first.json() == {"status": "ok", "saved": 0, "ignored": 0}
 
 
+def test_every_answer_carries_a_request_id_that_the_review_log_also_has(
+    make_client, make_llm, log_lines
+):
+    client = make_client(make_llm(WRITER))
+
+    response = client.post(
+        "/api/reviews",
+        json={"terraform": SQL_OPEN.terraform},
+        headers={"X-Request-ID": "chosen by the client"},
+    )
+
+    request_id = response.headers["X-Request-ID"]
+    assert request_id != "chosen by the client"
+    started = next(line for line in log_lines() if line["event"] == "review.started")
+    assert started["request_id"] == request_id
+    finished = next(line for line in log_lines() if line["event"] == "request.finished")
+    assert (finished["route"], finished["status"]) == ("/api/reviews", 200)
+
+
+def test_a_crash_in_a_route_is_a_500_with_a_reference_and_a_logged_cause(make_client, log_lines):
+    client = make_client()
+    client.app.state.service.get_memory = None  # any bug behind the route
+
+    response = client.get("/api/projects/shop/memory")
+
+    assert response.status_code == 500
+    assert response.headers["X-Request-ID"] in response.json()["detail"]
+    assert "NoneType" not in response.text
+    failure = next(line for line in log_lines() if line["event"] == "request.failed")
+    assert failure["request_id"] == response.headers["X-Request-ID"]
+    assert "NoneType" in failure["causes"][0]["message"]
+
+
 def test_project_memory_can_be_read_and_saved(make_client):
     client = make_client()
 

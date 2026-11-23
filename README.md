@@ -76,7 +76,7 @@ Blue nodes are plain code. Orange nodes use the LLM.
 | `retrieve` | no | Searches the local documentation store | The review continues without documents |
 | `grade_docs` | yes | Keeps only the useful passages | All passages are kept |
 | `rewrite_query` | yes | Rewrites the queries, at most 2 times | The loop ends |
-| `write_report` | yes | Summary and cost/sizing recommendations | Report with rule findings and cost only |
+| `write_report` | yes | Summary and cost, sizing and simplification recommendations | Report with rule findings and cost only |
 | `human_review` | no | Pauses for the user's feedback (UI only) | |
 | `save_feedback` | no | Saves feedback and the review to SQLite | A warning; the report is still returned |
 
@@ -120,7 +120,17 @@ security findings.
 "Suggestion (no documentation source)".
 
 **The agent degrades instead of crashing.** With no LLM key at all, a review still
-returns the security findings and the cost estimate.
+returns the security findings and the cost estimate. If the Billing API fails in any way
+(no connection, an error, an answer that is not what it should be), the services concerned
+are priced from the static table and the report names them.
+
+**A review has an end.** One LLM step has at most 90 seconds in total, retries included,
+and a review at most 180. At the limit the step falls back like any other failure, and no
+new LLM step is started. The limits are settings (`agent/config.py`).
+
+**A failure is explained in the log, not to the user.** A user sees a short message with a
+reference (the review id). The server log has the cause under that id, one JSON object per
+line, and never the Terraform, the prompts, the replies or a key. See "Logs" below.
 
 ### Security rules
 
@@ -171,7 +181,7 @@ OPENAI_API_KEY=           # alternative: OpenAI directly
 LANGSMITH_TRACING=true    # optional tracing
 LANGSMITH_API_KEY=
 LANGSMITH_PROJECT=gcp-review-agent
-GCP_BILLING_API_KEY=      # optional: live Compute Engine prices
+GCP_BILLING_API_KEY=      # optional: live list prices for the five services
 ```
 
 Without an LLM key the agent still runs in rule-only mode. Without a billing key it
@@ -323,21 +333,42 @@ output before it is returned.
 **6. No API key, or the provider is down.** The review still returns the security
 findings and the cost estimate, with a warning that the AI-written part is missing.
 
+### Logs
+
+The HTTP API and the MCP server log to stderr, one JSON object per line (`LOG_LEVEL` sets
+the level, default `INFO`). A review that failed says "Reference: 4f928f4e0721" to the
+user. Search the log for that id to see the review's steps and times, the failing step and
+the chain of errors behind it. A review line also has the id of the HTTP request, which
+the API returns as `X-Request-ID`.
+
 ### Tests, lint, evals
 
 ```bash
 uv run pytest                       # unit and integration tests (no API key needed)
 cd web && npm test                  # web UI component tests (no servers needed)
+cd web && npm run build && npm run test:e2e   # browser tests: the real UI, API and graph,
+                                    # with a scripted LLM. Once: npx playwright install
+                                    # chromium, or set PLAYWRIGHT_CHANNEL=msedge / chrome
 uv run ruff check . && uv run ruff format .
+uv run python -m api.schema && cd web && npm run types    # after changing an API model
 uv run python -m evals.run          # run the eval suite, writes evals/results/
 uv run python -m evals.run --configs full,react --models google/gemini-3.5-flash-lite
                                     # graph agent against the ReAct baseline
+                                    # also: no_grade, prompt_specific, prompt_short
+uv run python -m evals.rewrite_loop --model google/gemini-3.5-flash-lite
+                                    # the rewrite loop on hard queries
+uv run python -m evals.price_check  # static prices against live ones (free)
 uv run python -m evals.rejudge evals/results/<file>_llm.json --judge-model <model>
                                     # score a saved run again with another judge
 uv run python -m evals.llm_value    # compare the report with and without the LLM, from
                                     # the saved run (no model calls, costs nothing)
 uv run python -m evals.report       # rebuild the tables and charts below
 ```
+
+Every push runs lint, the Python and web tests with coverage, the type checks, the build
+and the browser tests in GitHub Actions (`.github/workflows/ci.yml`). It needs no secret
+and calls no paid service. Coverage may not fall below the floor set in `pyproject.toml`
+and `web/vitest.config.mts`.
 
 ## Research method
 
@@ -352,7 +383,15 @@ Five vulnerable and five clean samples (one per service), one mixed stack with a
 unsupported resource, and three prompt-injection samples. Eleven samples also have a
 monthly cost that was calculated by hand (the working is in
 `evals/dataset/README.md`). A separate file holds 34 search queries, each with the one
-document that answers it.
+document that answers it. A second file holds 21 harder queries, written before any of
+them was run: vague symptoms, another cloud's vocabulary, two topics in one query, and
+five questions that no document in the store answers.
+
+A held-out set of 35 files by other people (`evals/dataset/heldout/`): all 5 Google Cloud
+files of TerraGoat that use a supported resource, and 30 of Google's own documentation
+samples, 6 per service. Code chose them before any was opened. Checkov 3.4.7, an independent
+scanner, labelled them, through a mapping from its checks to these rules that was written
+before the scan. 15 of the 20 rules have an equivalent check; the others are not scored.
 
 **Metrics.**
 
@@ -361,6 +400,7 @@ document that answers it.
 | Security | Precision, recall, F1 | `(resource, rule)` pairs against the labels |
 | Security | Critical false positives | Critical findings on the clean samples |
 | Cost | Estimate error | Against the hand-calculated totals |
+| Cost | Price error | Static price table against the live Billing Catalog, per price and region |
 | Retrieval | Hit rate at 1, 2 and 4; MRR | Expected document in the top k |
 | Recommendations | Share with a valid source | `source_url` belongs to the document store |
 | Report text | Faithfulness, answer relevancy | DeepEval, on the whole AI-written text against everything the writer was given |
@@ -382,6 +422,12 @@ other model can be passed with `--models` and `--judge-model`.
 search off) and `no_rewrite` (rewrite loop off). They come from a separate, earlier run,
 judged by `xiaomi/mimo-v2.6-pro`. That judge is a relative of the model it judges, so
 the ablation faithfulness numbers are indicative only; only `full` was judged.
+
+Three more configurations are ready and **have not been run**, because they call paid
+models: `no_grade` (every passage found goes to the report writer), and two other prompts
+for the report writer (`prompt_specific`, `prompt_short`, in `evals/prompts/`). The same
+holds for `evals/rewrite_loop.py`, which gives the graph's own research nodes the hard
+queries. Their tables appear below once a run is saved.
 
 **Baseline.** To test the design, I built a second agent. `evals/react_baseline.py` is a
 ReAct agent: one LLM in a function-calling
@@ -413,7 +459,7 @@ prices used. The README tables are generated from those files by `evals/report.p
 
 ### Deterministic parts (no LLM)
 
-Source: `evals/results/20261110T081110Z_deterministic.json`. 14 samples.
+Source: `evals/results/20261123T213249Z_deterministic.json`. 14 samples.
 
 **Security rules** (a finding is a `(resource, rule)` pair):
 
@@ -436,16 +482,76 @@ Critical false positives on the clean samples: **0**.
 | with service filter | 0.94 | 0.97 | 0.97 | 0.96 |
 | without service filter | 0.94 | 0.97 | 0.97 | 0.96 |
 
+**Retrieval on the harder queries** (first search alone, with service filter; a hit is any of the query's expected documents):
+
+| Kind | Queries | Hit rate @1 | Hit rate @2 | Hit rate @4 | MRR |
+|---|---|---|---|---|---|
+| vague | 7 | 0.43 | 0.57 | 0.57 | 0.57 |
+| other cloud | 7 | 0.43 | 0.57 | 0.71 | 0.54 |
+| two topics | 2 | 1.00 | 1.00 | 1.00 | 1.00 |
+| all | 16 | 0.50 | 0.62 | 0.69 | 0.61 |
+
+**Security rules on the held-out samples** (labelled by Checkov 3.4.7):
+
+| Samples | Rules scored | TP | FP | FN | Precision | Recall | F1 |
+|---|---|---|---|---|---|---|---|
+| 35 | 15 | 53 | 7 | 0 | 0.88 | 1.00 | 0.94 |
+
+| Rule | TP | FP | FN | Precision | Recall |
+|---|---|---|---|---|---|
+| GCE-001 | 1 | 0 | 0 | 1.00 | 1.00 |
+| GCE-004 | 4 | 0 | 0 | 1.00 | 1.00 |
+| GCS-001 | 3 | 0 | 0 | 1.00 | 1.00 |
+| GCS-002 | 2 | 0 | 0 | 1.00 | 1.00 |
+| GCS-003 | 6 | 0 | 0 | 1.00 | 1.00 |
+| GCS-004 | 6 | 0 | 0 | 1.00 | 1.00 |
+| GKE-001 | 7 | 0 | 0 | 1.00 | 1.00 |
+| GKE-002 | 7 | 0 | 0 | 1.00 | 1.00 |
+| GKE-003 | 1 | 0 | 0 | 1.00 | 1.00 |
+| RUN-001 | 1 | 0 | 0 | 1.00 | 1.00 |
+| SQL-001 | 1 | 0 | 0 | 1.00 | 1.00 |
+| SQL-002 | 1 | 7 | 0 | 0.12 | 1.00 |
+| SQL-003 | 9 | 0 | 0 | 1.00 | 1.00 |
+| SQL-004 | 4 | 0 | 0 | 1.00 | 1.00 |
+
 **Speed of the deterministic steps:**
 
 | Step | Measurements | Median (ms) | p95 (ms) |
 |---|---|---|---|
-| parse | 280 | 3.562 | 7.316 |
-| security check | 280 | 0.051 | 0.105 |
-| cost estimate | 280 | 0.069 | 0.111 |
-| retrieve one query | 20 | 189.213 | 196.157 |
+| parse | 280 | 2.965 | 5.475 |
+| security check | 280 | 0.054 | 0.127 |
+| cost estimate | 280 | 0.036 | 0.081 |
+| retrieve one query | 20 | 206.200 | 217.762 |
 
 ![Median time per deterministic step](docs/img/tool_latency.png)
+
+### Static prices against live list prices
+
+Source: `evals/results/20261123T211900Z_price_check.json`. One price per key and listed region.
+
+| Prices | Compared | Off by more than 1% | Mean error (%) | Largest error (%) |
+|---|---|---|---|---|
+| compute | 64 | 0 | 0.00 | 0.02 |
+| disk | 24 | 0 | 0.00 | 0.00 |
+| gcs | 32 | 19 | 7.32 | 38.08 |
+| gke | 8 | 0 | 0.00 | 0.00 |
+| run | 32 | 20 | 5.62 | 12.14 |
+| sql | 48 | 18 | 3.72 | 12.14 |
+
+The same samples estimated with both tables (USD per month):
+
+| Sample | Static | Live | Difference (%) |
+|---|---|---|---|
+| `vulnerable/gcs_public.tf` | 2.00 | 2.00 | 0.00 |
+| `vulnerable/sql_open.tf` | 231.25 | 231.25 | 0.00 |
+| `vulnerable/compute_open_ssh.tf` | 150.29 | 150.29 | 0.00 |
+| `vulnerable/cloud_run_public_secret.tf` | 39.42 | 39.42 | 0.00 |
+| `vulnerable/gke_insecure.tf` | 396.53 | 396.51 | 0.01 |
+| `clean/gcs_clean.tf` | 1.10 | 1.00 | 10.00 |
+| `clean/sql_clean.tf` | 57.98 | 52.71 | 10.00 |
+| `clean/compute_clean.tf` | 26.46 | 26.46 | 0.00 |
+| `clean/gke_clean.tf` | 190.84 | 190.84 | 0.00 |
+| `mixed/web_stack.tf` | 124.32 | 123.39 | 0.75 |
 
 ### Full agent, per model
 
@@ -558,8 +664,36 @@ Source: `evals/results/20261110T175350Z_llm_value.json`, built with no model cal
 
 **The deterministic parts meet their targets on this dataset.** That result should be
 read with care: I wrote the rules and the samples myself, at the same time. The numbers show that the rules do what they were designed to do and that they
-will catch a regression. They do not show how the rules perform on Terraform written by
-other people, which is the first item under future work.
+will catch a regression.
+
+**On Terraform by other people the rules found everything Checkov found, and one rule
+disagrees with it.** On the 35 held-out files recall is 1.00 (53 of 53 labelled findings)
+and precision 0.88. All seven extra findings are SQL-002 (public IP), on instances that have
+no `ip_configuration` block at all. Checkov reports a public IP only when
+`ipv4_enabled = true` is written out; the rule treats "not set" as public. I could not settle
+who is right: the Terraform provider's default for `ipv4_enabled` is true, but it applies
+when the block is there, and without the block the Cloud SQL API decides, whose default I
+did not find documented. So the labels, the rule and the score stay as they are. What this
+result does not show: 53 findings are few, several rules have one labelled case or none
+(GCE-003), Checkov and these rules both follow common benchmarks, so they can share a blind
+spot, and 13 findings of unscored rules were not judged at all.
+
+**The estimator's arithmetic is exact; some of its prices are not.** The error of $0.00
+compares the estimator with sums made by hand from the same price table. The price check
+compares the table with the live catalog. Compute Engine, disk and GKE fee prices agree
+(largest error 0.02%). For Cloud Storage, Cloud Run and Cloud SQL more than a third of the
+prices are off by more than 1%, the worst by 38% (Archive storage in `europe-west3`, which
+the table underprices). All of it comes from the rough region multipliers: in
+`us-central1` every hand-typed price matched. Two of the ten samples with a cost, both in
+`europe-west1`, are overpriced by 10%, and the mixed stack by 0.75%. With a billing key
+the live prices are used for all five services, so this concerns reviews without one. I
+did not correct the table, because that would change expected costs of the fixed dataset.
+
+**Retrieval looks easier than it is.** On the ordinary queries the right document is in the
+top 4 for 0.97 of them. On the 16 hard queries that have an answer it is 0.69: 0.57 for
+vague symptoms, 0.71 for another cloud's words. The ordinary queries were worded differently
+from the documents, but by the same person, and they name the subject. This is the gap the
+rewrite loop is for, and whether it closes it has not been measured.
 
 **The one retrieval miss is informative.** The query about paying per pod is answered
 by two documents (the Autopilot overview and the page on choosing a cluster mode), and
@@ -608,7 +742,8 @@ three-model run (`evals/results/20261110T095622Z_llm.json`), one DeepSeek review
 The 60-second timeout applies to each attempt, and the client and the JSON repair step
 both retry, so nothing limits the total. That run's p95 (40 s) did not show it, because
 one review in 42 is below the p95 cut-off. The run in the table above had no fallback.
-A total deadline per LLM step is listed under future work.
+A step now has 90 seconds in total and a review 180 (decision 21). Of the 420
+report-writing steps in the saved graph runs, two took longer than that (141 s and 628 s).
 
 **RAG is what makes recommendations citable.** Without documentation search the model
 writes about as many recommendations (2.07 against 2.12 per review), but none has a
@@ -758,8 +893,10 @@ would do.
 
 ## Limitations
 
-- **In-sample evaluation.** See above: the dataset is small and was written alongside
-  the rules.
+- **Mostly in-sample evaluation.** The 14-sample dataset is small and was written alongside
+  the rules. The held-out set is independent of me, but it covers security only, was labelled
+  by one tool, and scores 15 of the 20 rules. Prices, retrieval and recommendations have no
+  held-out test.
 - **Static analysis only.** Variables, modules, `for_each` and expressions are not
   evaluated. A value that is only known at apply time is treated as unknown. A rule
   that needs that value may stay silent or, for "must be explicitly enabled" rules,
@@ -769,16 +906,14 @@ would do.
 - **The cost estimate is a list-price approximation.** It ignores traffic, data
   volume (a fixed 100 GB per bucket is assumed), egress, sustained and committed use
   discounts and Spot prices. Each line states its assumptions.
-- **Only part of the static price table is checked against the live API.** Compute
-  Engine and disk prices for the 8 listed regions were copied from the Billing Catalog
-  API on 2026-11-10; on that day the hand-typed us-central1 values matched it to within
-  rounding, but the old 1.1 Europe multiplier overpriced disks by 10%, which is why exact
-  regional prices are now stored. Cloud SQL, Cloud Storage, Cloud Run and GKE fee prices
-  are still hand-typed, with rough multipliers for other regions. The cost-error metric
-  measures the arithmetic of the estimator, not the accuracy of the prices.
-- **Live prices cover Compute Engine only.** The live path was checked once against
-  the real API (47 regions returned); the evals use the static table on purpose so the
+- **The static price table is off outside the US for three services.** Cloud Storage,
+  Cloud Run and Cloud SQL prices are hand-typed us-central1 values with a rough multiplier
+  per region (see "Static prices against live list prices"). Compute Engine and disk prices
+  are exact for the 8 listed regions. The evals use the static table on purpose, so the
   numbers are reproducible.
+- **Live prices have limits too.** Cloud SQL uses the MySQL prices for every engine and
+  leaves out SQL Server licences. The first review after a start waits about 10 seconds for
+  the five price catalogs.
 - **Multi-region bucket locations** (`EU`, `US`, `ASIA`) are priced as the default
   region, and the cost line says so.
 - **The documentation store is small**: 34 pages summarised as short notes. A
@@ -804,29 +939,27 @@ would do.
 - **Ablations on one model, one run.** RAG and the rewrite loop were ablated only on
   MiMo-flash, with a judge from the same vendor, and the loop did not run at all in that
   run.
-- **No total deadline per LLM step.** Each attempt has a 60-second timeout, but retries
-  are not capped in total time; one review took 628 seconds before it fell back.
+- **A step that hits its time limit is abandoned, not stopped.** The LLM call goes on in
+  the background until its own timeouts end it, and tokens it still spends are not counted.
+- **The hard queries are few and mine.** 21 queries, by the author of the documents. They
+  are harder, not independent.
 - **Run-to-run variance.** Even at temperature 0 the same configuration varies between
   runs (see Discussion), and only 3 runs per sample were made.
 
 ## Future work
 
-- A held-out test set from Terraform written by others (provider examples, public
-  repositories), labelled independently.
+- Human labels for the held-out files, for the 5 rules Checkov has no check for and as a
+  second opinion on the rest, and an answer on the Cloud SQL public IP default.
 - Resolve variables and locals, and read `terraform plan` JSON for exact values.
 - More rules (IAM, KMS, logging) and a way to add organisation-specific rules.
-- Live prices for all five services, and committed-use and Spot pricing.
+- Committed-use and Spot pricing, and exact regional static prices for Cloud Storage, Cloud
+  Run and Cloud SQL.
 - Fetch and re-index the official documentation on a schedule.
 - A CI mode that comments on pull requests.
-- A total time limit for each LLM step, so a slow provider cannot hold a review for
-  minutes.
 - Add a premium model to the comparison, and repeat the ablations on more than one
   model with an independent judge.
-- A `no_grade` ablation (the graph without the `grade_docs` step), to measure what the
-  second of the three model calls adds, and a comparison of prompt variants for
-  `write_report`.
-- Harder retrieval queries (services or questions the store covers poorly) to test
-  whether the rewrite loop earns its place.
+- Run the prepared paid experiments: `no_grade` (what the second of the three model calls
+  adds), the two other prompts for `write_report`, and the rewrite loop on the hard queries.
 - Run the ReAct baseline on more models and with harder injection samples, to find
   where a tool-calling loop does get talked out of the security check.
 - A Ragas faithfulness setup that also gives the judge the facts about the reviewed
@@ -840,11 +973,15 @@ tools/          tf_parser, security_rules, cost_estimator, billing_api, prices_s
 rag/            ingest.py, retriever.py, docs/ (notes on GCP documentation pages)
 memory/         SQLite store and the feedback policy
 agent/service.py  one interface for every front end: review, feedback, memory, samples
-api/            HTTP API (FastAPI) over the review service, used by the web UI
-web/            the web UI: Next.js, React, TypeScript; component tests with Vitest
+api/            HTTP API (FastAPI) over the review service, used by the web UI;
+                schema.py (source of the TypeScript types), request_log.py
+web/            the web UI: Next.js, React, TypeScript; component tests with Vitest,
+                browser tests with Playwright (e2e/)
 mcp_server/     MCP server exposing review_gcp_infra
 evals/          dataset/, run.py, report.py, results/, judge.py (DeepEval),
-                ragas_judge.py (Ragas), react_baseline.py (ReAct agent), rejudge.py
+                ragas_judge.py (Ragas), react_baseline.py (ReAct agent), rejudge.py,
+                rewrite_loop.py, price_check.py, heldout.py (and heldout_select.py,
+                heldout_label.py)
 tests/          pytest tests mirroring the layout above
 docs/           PLAN, PROGRESS, DECISIONS, LEARNING_NOTES, tickets/, examples/, reviews/
 ```

@@ -4,8 +4,10 @@
 - `ReviewSession` runs it in two steps for the UI: `start` stops at the human review
   interrupt and returns the report, `finish` resumes the graph with the feedback.
 
-Both validate the input before the graph starts, load the project's long-term memory
-into the initial state, and attach the timings to the report.
+Both validate the input before the graph starts (the only place that does), load the
+project's long-term memory into the initial state, and attach the timings to the report.
+Token usage and cost are already in the report: `build_report` is the only place that
+adds them up.
 """
 
 from __future__ import annotations
@@ -20,7 +22,6 @@ from langgraph.types import Command
 
 from agent.deps import Deps, default_deps
 from agent.graph import build_graph
-from agent.report import summarize_usage
 from agent.state import ReviewReport, ReviewState
 from memory.store import FeedbackItem
 from tools.tf_parser import validate_terraform_input
@@ -32,35 +33,49 @@ class ReviewNotPausedError(RuntimeError):
     """`finish` was called for a review that is not waiting for feedback."""
 
 
-def _initial_state(terraform: str, project_id: str, deps: Deps, interactive: bool) -> ReviewState:
+def new_review_id() -> str:
+    return uuid.uuid4().hex[:12]
+
+
+def _initial_state(
+    terraform: str, project_id: str, deps: Deps, interactive: bool, review_id: str | None
+) -> ReviewState:
     return ReviewState(
         terraform=terraform,
         project_id=project_id,
-        review_id=uuid.uuid4().hex[:12],
+        review_id=review_id or new_review_id(),
         interactive=interactive,
+        deadline_at=deps.clock() + deps.settings.review_deadline_s,
         constraints=deps.store.get_constraints(project_id),
         past_feedback=deps.store.get_feedback(project_id),
     )
 
 
 def _finalize(values: dict[str, Any], total_seconds: float) -> ReviewReport:
-    """Take the report out of the final state and attach timings and total usage."""
+    """Take the report out of the final state and attach the timings."""
     report: ReviewReport = values["report"]
     timings = {**values.get("timings", {}), "total": round(total_seconds, 4)}
-    return report.model_copy(
-        update={"timings": timings, "usage": summarize_usage(values.get("usage", []))}
-    )
+    return report.model_copy(update={"timings": timings})
 
 
 def run_review(
-    terraform: str, project_id: str = "default", *, deps: Deps | None = None
+    terraform: str,
+    project_id: str = "default",
+    *,
+    deps: Deps | None = None,
+    review_id: str | None = None,
 ) -> ReviewReport:
-    """Review Terraform and return the report. Raises `TerraformInputError` on bad input."""
+    """Review Terraform and return the report. Raises `TerraformInputError` on bad input.
+
+    A caller that logs its own failures passes the `review_id` it logs them under.
+    """
     validate_terraform_input(terraform)
     deps = deps or default_deps()
     graph = build_graph(deps)
     start = deps.clock()
-    values = graph.invoke(_initial_state(terraform, project_id, deps, interactive=False))
+    values = graph.invoke(
+        _initial_state(terraform, project_id, deps, interactive=False, review_id=review_id)
+    )
     return _finalize(values, deps.clock() - start)
 
 
@@ -84,12 +99,14 @@ class ReviewSession:
         return report
 
     def start_steps(
-        self, terraform: str, project_id: str = "default"
+        self, terraform: str, project_id: str = "default", review_id: str | None = None
     ) -> Iterator[str | ReviewReport]:
         """Like `start`, but yields the name of each graph node as it finishes, and the
         report last. A front end uses the names to show progress while it waits."""
         validate_terraform_input(terraform)
-        state = _initial_state(terraform, project_id, self.deps, interactive=True)
+        state = _initial_state(
+            terraform, project_id, self.deps, interactive=True, review_id=review_id
+        )
         config = self._config(state.review_id)
         start = self.deps.clock()
         for update in self._graph.stream(state, config, stream_mode="updates"):

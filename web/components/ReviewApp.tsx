@@ -12,6 +12,9 @@ import { getCapabilities, getSample, getSamples, sendFeedback, streamReview } fr
 import type { Capabilities, FeedbackChoice, ReviewReport } from "@/lib/types";
 
 const PROJECT_NAME = /^[A-Za-z0-9_.-]{1,64}$/;
+const UNEXPECTED = "Something went wrong while showing the review. Please run it again.";
+const NO_SAMPLES =
+  "The examples could not be loaded. You can still paste or upload your own file.";
 const API_DOWN =
   "The review service is not answering. Start the Python API with " +
   "“uv run python -m api.server” and reload this page.";
@@ -20,6 +23,7 @@ const API_DOWN =
 export function ReviewApp() {
   const [capabilities, setCapabilities] = useState<Capabilities | null>(null);
   const [samples, setSamples] = useState<string[]>([]);
+  const [samplesProblem, setSamplesProblem] = useState("");
   const [project, setProject] = useState("default");
   const [terraform, setTerraform] = useState("");
   const [advanced, setAdvanced] = useState(DEFAULT_ADVANCED);
@@ -36,7 +40,7 @@ export function ReviewApp() {
       .catch(() => setProblem(API_DOWN));
     getSamples()
       .then(setSamples)
-      .catch(() => setSamples([]));
+      .catch(() => setSamplesProblem(NO_SAMPLES));
   }, []);
 
   const projectIsValid = PROJECT_NAME.test(project);
@@ -45,6 +49,7 @@ export function ReviewApp() {
     if (!name) return;
     try {
       setTerraform(await getSample(name));
+      setProblem("");
     } catch {
       setProblem("Could not load that example.");
     }
@@ -56,8 +61,12 @@ export function ReviewApp() {
       setProblem(`That file is larger than ${capabilities.max_input_kb} KB.`);
       return;
     }
-    setProblem("");
-    setTerraform(await file.text());
+    try {
+      setTerraform(await file.text());
+      setProblem("");
+    } catch {
+      setProblem("Could not read that file.");
+    }
   };
 
   const review = async () => {
@@ -67,18 +76,22 @@ export function ReviewApp() {
     setSteps([]);
     setRunning(true);
     const request = { terraform, project_id: project, options: toOptions(advanced) };
-    for await (const event of streamReview(request)) {
-      if (event.type === "step" && event.step) {
-        const step = event.step;
-        setSteps((done) => [...done, step]);
-      } else if (event.type === "report" && event.report) {
-        setReport(event.report);
-        setWaiting(Boolean(event.waiting_for_feedback));
-      } else {
-        setProblem(event.message ?? "The review did not finish.");
+    try {
+      for await (const event of streamReview(request)) {
+        if (event.type === "step") {
+          setSteps((done) => [...done, event.step]);
+        } else if (event.type === "report") {
+          setReport(event.report);
+          setWaiting(event.waiting_for_feedback);
+        } else {
+          setProblem(event.message);
+        }
       }
+    } catch {
+      setProblem(UNEXPECTED); // streamReview reports its own problems: this is a bug here
+    } finally {
+      setRunning(false); // whatever happened, the button works again
     }
-    setRunning(false);
   };
 
   const finish = async (feedback: FeedbackChoice[]) => {
@@ -122,6 +135,11 @@ export function ReviewApp() {
                   </option>
                 ))}
               </select>
+              {samplesProblem && (
+                <span role="status" className="muted">
+                  {samplesProblem}
+                </span>
+              )}
             </label>
             <label>
               Or upload a .tf file

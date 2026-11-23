@@ -7,6 +7,9 @@ Configurations (ablations):
 - `full`:        the agent as designed
 - `no_rag`:      documentation search switched off
 - `no_rewrite`:  search on, but the rewrite loop disabled (max_rewrites = 0)
+- `no_grade`:    search on, but every passage found goes to the report writer
+- `prompt_specific`, `prompt_short`: the agent as designed, with another prompt for the
+                 report writer (evals/prompts/write_report_*.md)
 - `react`:       not the graph at all, but the ReAct baseline (evals/react_baseline.py):
                  one LLM with function calling over the same tools
 """
@@ -16,10 +19,12 @@ from __future__ import annotations
 import re
 import statistics
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 from agent.deps import Deps
 from agent.graph import DETERMINISTIC_NODES, LLM_NODES
+from agent.llm import UsageRecord, usage_cost_usd
 from agent.report import SUGGESTION_PREFIX
 from agent.runner import run_review
 from agent.state import ReviewReport
@@ -38,8 +43,17 @@ CONFIGS: dict[str, dict[str, Any]] = {
     "no_rag": {"use_rag": False},
     "no_rewrite": {"max_rewrites": 0},
 }
-REACT = "react"  # opt-in (`--configs full,react`): a different agent, not a graph setting
-JUDGED_CONFIGS = ("full", REACT)  # the judges cost money: only the configs being compared
+PROMPTS_DIR = Path(__file__).parent / "prompts"
+# Opt-in (`--configs full,no_grade`), so that a default run does not get more expensive.
+EXTRA_CONFIGS: dict[str, dict[str, Any]] = {
+    "no_grade": {"use_grading": False},
+    "prompt_specific": {"report_prompt_path": PROMPTS_DIR / "write_report_specific.md"},
+    "prompt_short": {"report_prompt_path": PROMPTS_DIR / "write_report_short.md"},
+}
+ALL_CONFIGS = CONFIGS | EXTRA_CONFIGS
+REACT = "react"  # opt-in too: a different agent, not a graph setting
+# The judges cost money: only the configs whose text quality is being compared.
+JUDGED_CONFIGS = ("full", REACT, *EXTRA_CONFIGS)
 _URL = re.compile(r"https?://[^\s)\]>\"']+")
 _FALLBACK_MARKERS = ("unavailable", "default queries", "skipped", "failed")
 
@@ -52,12 +66,14 @@ def corpus_urls() -> set[str]:
 
 
 def review_cost_usd(report: ReviewReport, model: str, prices: Prices) -> float | None:
-    price = prices.get(model)
-    if price is None:
-        return None
-    usage = report.usage
-    cost = usage.input_tokens * price["input"] + usage.output_tokens * price["output"]
-    return round(cost / 1e6, 6)
+    """What the review cost at the prices of this run (the report uses the bundled ones)."""
+    total = UsageRecord(
+        node="all",
+        model=model,
+        input_tokens=report.usage.input_tokens,
+        output_tokens=report.usage.output_tokens,
+    )
+    return usage_cost_usd([total], prices)
 
 
 def score_review(report: ReviewReport, sample: Sample, valid_urls: set[str]) -> dict[str, Any]:
@@ -136,7 +152,7 @@ def run_llm_eval(
     records: list[dict[str, Any]] = []
     for model in models:
         for config in configs[model]:
-            deps = deps_factory(model, CONFIGS.get(config, {}))
+            deps = deps_factory(model, ALL_CONFIGS.get(config, {}))
             for sample in samples:
                 for run in range(1, runs + 1):
                     record = {"model": model, "config": config, "file": sample.file,

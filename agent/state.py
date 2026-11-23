@@ -64,6 +64,7 @@ class ReviewState(BaseModel):
     project_id: str = "default"
     review_id: str
     interactive: bool = False  # True = pause at human_review and wait for feedback
+    deadline_at: float | None = None  # on the clock in `Deps`; None = no time limit
 
     # Long-term memory, loaded before the graph starts
     constraints: ProjectConstraints = Field(default_factory=ProjectConstraints)

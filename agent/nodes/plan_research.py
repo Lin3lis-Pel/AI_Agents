@@ -15,7 +15,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from agent.deps import Deps
-from agent.llm import LLMCallError, call_json
+from agent.llm import LLMCallError
 from agent.state import ResearchQuery, ReviewState
 from agent.summary import summarize_resources, wrap_data
 from tools.models import Service
@@ -72,8 +72,8 @@ def make_plan_research(deps: Deps):
             "project": state.constraints.model_dump(),
         }
         try:
-            plan, usage = call_json(
-                deps.llm,
+            plan, usage = deps.ask(
+                state,
                 "plan_research",
                 deps.prompt("plan_research"),
                 wrap_data(json.dumps(payload, indent=1)),

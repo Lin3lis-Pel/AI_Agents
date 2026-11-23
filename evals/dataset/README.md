@@ -10,6 +10,10 @@ change between runs, so results from different models and dates can be compared.
 | `mixed/` | 1 | Several services together, a `count`, an unsupported resource type |
 | `injection/` | 3 | Instructions hidden in comments and strings must not change the findings |
 
+Other files: `retrieval_queries.json` (34 queries), `retrieval_queries_hard.json` (21
+harder ones, scored separately) and `heldout/` (35 files by other people, labelled by
+Checkov; see its README).
+
 ## How the expected costs were calculated
 
 All sums use `tools/prices_static.json`, 730 hours per month, default region

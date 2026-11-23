@@ -95,8 +95,8 @@ standard library is enough.
 
 ## 9. Feedback can only deprioritise
 
-**Decision.** Dismissing a cost or sizing suggestion marks later suggestions of the
-same kind as deprioritised and sorts them last. Nothing is removed. Feedback on a
+**Decision.** Dismissing a cost, sizing or simplification suggestion marks later
+suggestions of the same kind as deprioritised and sorts them last. Nothing is removed. Feedback on a
 security finding is stored but has no effect.
 
 **Why.** The user should be able to say "not relevant here" without being able to
@@ -119,6 +119,8 @@ parameters each model honours (temperature and seed are sent, and a model that d
 not support them ignores them).
 
 ## 11. Static prices first, live prices for Compute Engine only
+
+*Extended by decision 20: live prices now cover all five services.*
 
 **Decision.** The estimator works from `tools/prices_static.json`. When a billing API
 key is set, live Compute Engine prices (vCPU, memory, disks) replace the static ones.
@@ -238,3 +240,101 @@ a test surface that needs no server.
 types are written by hand, guarded by a test that compares field names with the Python
 models. The API has no authentication and must stay on localhost. The MCP server still
 calls `run_review` directly and has not been moved onto the service yet.
+
+## 20. Live prices for all five services, matched by name and unit
+
+**Decision.** The Billing Catalog client reads the SKUs of all five services, in parallel.
+A SKU becomes a price only when its description **and** its unit match. Each service falls
+back to the static table on its own, and the report names the ones that did. The API key
+is sent in a header. Whatever goes wrong behind `load_prices` ends as a fallback.
+
+**Why.** The old boundary caught transport errors only: a 200 answer that was not JSON, or
+JSON of another shape, would have ended as a lost cost estimate or a crash. The unit check
+is needed because the catalog lists "Nearline Storage Iowa" per GB-month and an
+early-delete charge of almost the same name per GB-day. The header is there because HTTP
+libraries log URLs and put them in error messages.
+
+**What it showed.** The static table is exact for Compute Engine, disks and the GKE fee.
+Its rough region multipliers overprice or underprice Cloud Storage, Cloud Run and Cloud SQL
+outside the US (README, "Static prices against live list prices"). The GKE fee is the same
+everywhere, so it no longer gets a multiplier.
+
+**Given up.** The first review after a start waits for five catalogs (about 10 s). Cloud
+SQL is priced from the MySQL SKUs whatever the engine, and SQL Server licences are not
+included. The evals still use the static table, so that results stay comparable.
+
+## 21. A total time limit per step and per review
+
+**Decision.** An LLM step has 90 seconds in total and a review 180, whatever happens inside
+(attempts, retries, the JSON repair). At the limit the step stops waiting and uses the same
+fallback as any other failure. A review out of time starts no further LLM step.
+
+**Why.** One saved review waited 628 seconds. The 60-second timeout is per attempt, and a
+provider that keeps the connection alive never reaches it. 90 s was chosen from the saved
+runs: of 420 report-writing steps two took longer (141 s and 628 s), so the limit would
+have cut off 2 of 420 and nothing else.
+
+**Alternatives.** Fewer retries (a slow answer is still unlimited); async calls with
+cancellation (the client's connection pool is tied to one event loop, and every node and
+test is synchronous); a circuit breaker that stops calling a failing provider (useful with
+many users at once, not for one local user; the review limit bounds the damage already).
+
+**Given up.** The call runs in its own thread, and Python cannot stop a thread. At the limit
+it is left behind and ends on its own; what it still spends is not in the usage count. The
+ReAct baseline has no such limit, because it is not part of the product.
+
+## 22. Structured logs with ids, and the cause only in the log
+
+**Decision.** `tools/logs.py` writes one JSON object per line to stderr. Every review has an
+id, every HTTP request has one, and the log joins them. A user sees the exception type and
+the review id; the log has the chain of causes and where each was raised.
+
+**Why.** Messages were cut down to an exception type so that nothing leaks, and the cause
+was then thrown away. A failure in real use could not be diagnosed at all.
+
+**How it stays safe.** Nothing is logged that is not passed in, and Terraform, prompts and
+replies never are. Exception messages are redacted (values of secret-looking environment
+variables, key patterns, `password is ...`) and cut to 300 characters. Pydantic messages,
+which quote the input, are reduced to field and error type. Only this project's logger is
+configured. No new dependency.
+
+**Given up.** Redaction is by pattern, so it is a second line of defence, not a proof.
+
+## 23. TypeScript types generated from the Pydantic models
+
+**Decision.** `api/schema.py` writes the OpenAPI schema to `web/lib/openapi.json`, and
+`openapi-typescript` turns it into types. A pytest test and `npm run types:check` fail when
+either file is out of date. A stream event is a union of three models, not one model with
+optional fields. Playwright tests the whole path in a browser with a scripted LLM.
+
+**Why.** The old contract test compared field names. It could not see a wrong type or a
+missing null. Generating the types found a real slip on the first compile: the page read
+`message` on events that do not have one.
+
+**Given up.** Three development dependencies (`openapi-typescript`, `@playwright/test`,
+`@vitest/coverage-v8`), two generated files in the repository, and a step to remember when
+a model changes (the tests say which).
+
+## 24. CI on every push, with no secrets
+
+**Decision.** GitHub Actions runs ruff, pytest with coverage, the type checks, lint, web
+tests, the build and the browser tests. It has no API key and calls no paid service.
+
+**Why.** The README said the checks pass, and nothing enforced it. Coverage has a floor at
+the value measured when it was added, so it can only be lowered on purpose.
+
+**Given up.** The evals with a real model are still run by hand, because they cost money.
+
+## 25. A held-out set labelled by Checkov
+
+**Decision.** 35 Terraform files by other people, chosen by code at pinned commits
+(`evals/heldout_select.py`), labelled by Checkov 3.4.7 through a mapping from its checks to
+our rules (`evals/heldout_label.py`). A rule is scored only where Checkov has an equivalent
+check, and only on the resource types that check looks at. Checkov is not a dependency.
+
+**Why.** Every security score so far was on samples written next to the rules. I cannot
+label files independently, because I know the rules. A scanner by other people does not.
+
+**Given up.** A tool is not a person: it has bugs and opinions, and it may share blind spots
+with rules that follow the same benchmarks. Five rules have no equivalent and stay unscored.
+The mapping is mine; it was fixed from titles alone, before the first scan.

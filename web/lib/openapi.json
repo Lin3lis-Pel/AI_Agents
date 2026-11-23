@@ -1,0 +1,1120 @@
+{
+  "components": {
+    "schemas": {
+      "Capabilities": {
+        "description": "Facts about what the tool supports. The wording around them belongs to the UI.",
+        "properties": {
+          "llm_configured": {
+            "title": "Llm Configured",
+            "type": "boolean"
+          },
+          "max_input_kb": {
+            "title": "Max Input Kb",
+            "type": "integer"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "resource_types": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Resource Types",
+            "type": "array"
+          },
+          "rule_count": {
+            "title": "Rule Count",
+            "type": "integer"
+          },
+          "services": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Services",
+            "type": "array"
+          }
+        },
+        "required": [
+          "services",
+          "resource_types",
+          "rule_count",
+          "max_input_kb",
+          "llm_configured",
+          "model"
+        ],
+        "title": "Capabilities",
+        "type": "object"
+      },
+      "Category": {
+        "description": "What kind of finding this is. Only SECURITY findings are protected from feedback.",
+        "enum": [
+          "security",
+          "cost",
+          "sizing",
+          "simplification"
+        ],
+        "title": "Category",
+        "type": "string"
+      },
+      "CostEstimate": {
+        "properties": {
+          "currency": {
+            "default": "USD",
+            "title": "Currency",
+            "type": "string"
+          },
+          "default_region": {
+            "title": "Default Region",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/CostLine"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "price_source": {
+            "title": "Price Source",
+            "type": "string"
+          },
+          "prices_may_be_outdated": {
+            "default": false,
+            "title": "Prices May Be Outdated",
+            "type": "boolean"
+          },
+          "regions_used": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Regions Used",
+            "type": "array"
+          },
+          "total_monthly_usd": {
+            "default": 0.0,
+            "title": "Total Monthly Usd",
+            "type": "number"
+          }
+        },
+        "required": [
+          "lines",
+          "total_monthly_usd",
+          "currency",
+          "default_region",
+          "regions_used",
+          "price_source",
+          "prices_may_be_outdated",
+          "notes"
+        ],
+        "title": "CostEstimate",
+        "type": "object"
+      },
+      "CostLine": {
+        "properties": {
+          "assumptions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Assumptions",
+            "type": "array"
+          },
+          "monthly_usd": {
+            "title": "Monthly Usd",
+            "type": "number"
+          },
+          "priced": {
+            "default": true,
+            "title": "Priced",
+            "type": "boolean"
+          },
+          "resource": {
+            "title": "Resource",
+            "type": "string"
+          },
+          "service": {
+            "$ref": "#/components/schemas/Service"
+          }
+        },
+        "required": [
+          "resource",
+          "service",
+          "monthly_usd",
+          "priced",
+          "assumptions"
+        ],
+        "title": "CostLine",
+        "type": "object"
+      },
+      "Doc": {
+        "description": "One retrieved chunk of GCP documentation.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "score": {
+            "default": 0.0,
+            "title": "Score",
+            "type": "number"
+          },
+          "service": {
+            "title": "Service",
+            "type": "string"
+          },
+          "source_url": {
+            "title": "Source Url",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "service",
+          "source_url",
+          "text",
+          "score"
+        ],
+        "title": "Doc",
+        "type": "object"
+      },
+      "FeedbackAction": {
+        "enum": [
+          "helpful",
+          "dismiss"
+        ],
+        "title": "FeedbackAction",
+        "type": "string"
+      },
+      "FeedbackChoice": {
+        "description": "The user's answer about one finding, named by its position in the report.\n\nThe front end sends a position, not a key, so it cannot make up a finding to dismiss.",
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/FeedbackAction"
+          },
+          "comment": {
+            "default": "",
+            "maxLength": 300,
+            "title": "Comment",
+            "type": "string"
+          },
+          "finding_index": {
+            "minimum": 0.0,
+            "title": "Finding Index",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "finding_index",
+          "action"
+        ],
+        "title": "FeedbackChoice",
+        "type": "object"
+      },
+      "FeedbackRequest": {
+        "properties": {
+          "feedback": {
+            "items": {
+              "$ref": "#/components/schemas/FeedbackChoice"
+            },
+            "maxItems": 50,
+            "title": "Feedback",
+            "type": "array"
+          }
+        },
+        "title": "FeedbackRequest",
+        "type": "object"
+      },
+      "Finding": {
+        "description": "One item in the review report.\n\nThe six fields required by the project brief come first. `rule_id`, `category` and\n`deprioritized` are extras used for evaluation and for the feedback policy.",
+        "properties": {
+          "category": {
+            "$ref": "#/components/schemas/Category",
+            "default": "security"
+          },
+          "deprioritized": {
+            "default": false,
+            "title": "Deprioritized",
+            "type": "boolean"
+          },
+          "estimated_savings": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Savings"
+          },
+          "issue": {
+            "title": "Issue",
+            "type": "string"
+          },
+          "recommendation": {
+            "title": "Recommendation",
+            "type": "string"
+          },
+          "resource": {
+            "title": "Resource",
+            "type": "string"
+          },
+          "rule_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule Id"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
+          "terraform_fields": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Terraform Fields",
+            "type": "array"
+          }
+        },
+        "required": [
+          "severity",
+          "resource",
+          "issue",
+          "recommendation",
+          "estimated_savings",
+          "source_url",
+          "rule_id",
+          "category",
+          "deprioritized",
+          "terraform_fields"
+        ],
+        "title": "Finding",
+        "type": "object"
+      },
+      "FinishResult": {
+        "properties": {
+          "ignored": {
+            "default": 0,
+            "title": "Ignored",
+            "type": "integer"
+          },
+          "saved": {
+            "default": 0,
+            "title": "Saved",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "ok",
+              "not_found",
+              "already_finished"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "saved",
+          "ignored"
+        ],
+        "title": "FinishResult",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "ProblemEvent": {
+        "description": "The input was rejected, or the review failed. Always the last event.",
+        "properties": {
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "review_id": {
+            "title": "Review Id",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "rejected",
+              "error"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "review_id"
+        ],
+        "title": "ProblemEvent",
+        "type": "object"
+      },
+      "ProjectConstraints": {
+        "description": "Per-project facts the reviewer should take into account.",
+        "properties": {
+          "budget_monthly_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Monthly Usd"
+          },
+          "preferences": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Preferences",
+            "type": "array"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          }
+        },
+        "required": [
+          "budget_monthly_usd",
+          "region",
+          "preferences"
+        ],
+        "title": "ProjectConstraints",
+        "type": "object"
+      },
+      "ReportEvent": {
+        "description": "The review is done. Always the last event.",
+        "properties": {
+          "report": {
+            "$ref": "#/components/schemas/ReviewReport"
+          },
+          "type": {
+            "const": "report",
+            "default": "report",
+            "title": "Type",
+            "type": "string"
+          },
+          "waiting_for_feedback": {
+            "title": "Waiting For Feedback",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "type",
+          "report",
+          "waiting_for_feedback"
+        ],
+        "title": "ReportEvent",
+        "type": "object"
+      },
+      "ReviewOptions": {
+        "description": "Advanced settings for one review. Anything left out keeps the configured default.\n\nNone of these can change a security finding: the rules do not read them.",
+        "properties": {
+          "extra_instructions": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extra Instructions"
+          },
+          "max_rewrites": {
+            "anyOf": [
+              {
+                "maximum": 2.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Rewrites"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "temperature": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature"
+          },
+          "use_rag": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Use Rag"
+          }
+        },
+        "title": "ReviewOptions",
+        "type": "object"
+      },
+      "ReviewReport": {
+        "description": "The result of a review. This is what the UI shows and what the MCP tool returns.",
+        "properties": {
+          "cost_estimate": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CostEstimate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Doc"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "findings": {
+            "items": {
+              "$ref": "#/components/schemas/Finding"
+            },
+            "title": "Findings",
+            "type": "array"
+          },
+          "headline": {
+            "default": "",
+            "title": "Headline",
+            "type": "string"
+          },
+          "model": {
+            "default": "none",
+            "title": "Model",
+            "type": "string"
+          },
+          "project_id": {
+            "title": "Project Id",
+            "type": "string"
+          },
+          "resources_reviewed": {
+            "default": 0,
+            "title": "Resources Reviewed",
+            "type": "integer"
+          },
+          "review_id": {
+            "title": "Review Id",
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "status": {
+            "default": "ok",
+            "enum": [
+              "ok",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "summary": {
+            "default": "",
+            "title": "Summary",
+            "type": "string"
+          },
+          "timings": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Timings",
+            "type": "object"
+          },
+          "unsupported_resources": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Unsupported Resources",
+            "type": "array"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/UsageSummary"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "review_id",
+          "project_id",
+          "status",
+          "model",
+          "headline",
+          "summary",
+          "findings",
+          "cost_estimate",
+          "resources_reviewed",
+          "unsupported_resources",
+          "warnings",
+          "sources",
+          "evidence",
+          "usage",
+          "timings"
+        ],
+        "title": "ReviewReport",
+        "type": "object"
+      },
+      "ReviewRequest": {
+        "properties": {
+          "options": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReviewOptions"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "project_id": {
+            "default": "default",
+            "pattern": "^[A-Za-z0-9_.-]{1,64}$",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "terraform": {
+            "maxLength": 1000000,
+            "title": "Terraform",
+            "type": "string"
+          }
+        },
+        "required": [
+          "terraform"
+        ],
+        "title": "ReviewRequest",
+        "type": "object"
+      },
+      "SampleFile": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "terraform": {
+            "title": "Terraform",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "terraform"
+        ],
+        "title": "SampleFile",
+        "type": "object"
+      },
+      "SampleList": {
+        "properties": {
+          "samples": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Samples",
+            "type": "array"
+          }
+        },
+        "required": [
+          "samples"
+        ],
+        "title": "SampleList",
+        "type": "object"
+      },
+      "Service": {
+        "description": "The five GCP services in scope (see CLAUDE.md, \"Scope\").",
+        "enum": [
+          "cloud_run",
+          "compute",
+          "cloud_sql",
+          "cloud_storage",
+          "gke"
+        ],
+        "title": "Service",
+        "type": "string"
+      },
+      "Severity": {
+        "enum": [
+          "critical",
+          "high",
+          "medium",
+          "low"
+        ],
+        "title": "Severity",
+        "type": "string"
+      },
+      "StepEvent": {
+        "description": "A graph node just finished.",
+        "properties": {
+          "step": {
+            "title": "Step",
+            "type": "string"
+          },
+          "type": {
+            "const": "step",
+            "default": "step",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "step"
+        ],
+        "title": "StepEvent",
+        "type": "object"
+      },
+      "UsageSummary": {
+        "properties": {
+          "calls_by_node": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Calls By Node",
+            "type": "object"
+          },
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Usd"
+          },
+          "input_tokens": {
+            "default": 0,
+            "title": "Input Tokens",
+            "type": "integer"
+          },
+          "llm_calls": {
+            "default": 0,
+            "title": "Llm Calls",
+            "type": "integer"
+          },
+          "output_tokens": {
+            "default": 0,
+            "title": "Output Tokens",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "llm_calls",
+          "input_tokens",
+          "output_tokens",
+          "cost_usd",
+          "calls_by_node"
+        ],
+        "title": "UsageSummary",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "GCP Infra Review Agent API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/capabilities": {
+      "get": {
+        "operationId": "capabilities_api_capabilities_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Capabilities"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Capabilities"
+      }
+    },
+    "/api/projects/{project_id}/memory": {
+      "get": {
+        "operationId": "get_memory_api_projects__project_id__memory_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9_.-]{1,64}$",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectConstraints"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Memory"
+      },
+      "put": {
+        "operationId": "save_memory_api_projects__project_id__memory_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Za-z0-9_.-]{1,64}$",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectConstraints"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectConstraints"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Memory"
+      }
+    },
+    "/api/reviews": {
+      "post": {
+        "operationId": "review_api_reviews_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "discriminator": {
+                    "mapping": {
+                      "error": "#/components/schemas/ProblemEvent",
+                      "rejected": "#/components/schemas/ProblemEvent",
+                      "report": "#/components/schemas/ReportEvent",
+                      "step": "#/components/schemas/StepEvent"
+                    },
+                    "propertyName": "type"
+                  },
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/StepEvent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ReportEvent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ProblemEvent"
+                    }
+                  ],
+                  "title": "Response 200 Review Api Reviews Post",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "One event per line"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Review"
+      }
+    },
+    "/api/reviews/{review_id}/feedback": {
+      "post": {
+        "operationId": "feedback_api_reviews__review_id__feedback_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "review_id",
+            "required": true,
+            "schema": {
+              "title": "Review Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinishResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Feedback"
+      }
+    },
+    "/api/samples": {
+      "get": {
+        "operationId": "samples_api_samples_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SampleList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Samples"
+      }
+    },
+    "/api/samples/{name}": {
+      "get": {
+        "operationId": "sample_api_samples__name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SampleFile"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sample"
+      }
+    }
+  }
+}

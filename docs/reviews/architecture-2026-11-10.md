@@ -10,8 +10,12 @@ Terms: **module**, **interface**, **depth**, **seam**, **adapter**, **leverage**
 numbered entries in `docs/DECISIONS.md`. There is no `GLOSSARY.md` yet.
 
 "Node" always means a **LangGraph node**: one step of the agent graph (`agent/nodes/*.py`,
-for example `plan_research` or `write_report`). It has nothing to do with Node.js. The
-project is Python only, and the front end is Streamlit (`ui/app.py`).
+for example `plan_research` or `write_report`). It has nothing to do with Node.js.
+
+**This first part describes the code as it was at that commit**, when the project was
+Python only and the front end was a Streamlit file (`ui/app.py`). That front end no longer
+exists: the second review below led to the Next.js UI in `web/` (decision 19). What has
+become of each candidate is in "Status at 2026-11-23" at the end.
 
 ---
 
@@ -546,3 +550,23 @@ the committed schema with the model.
 
 A new HTTP dependency (FastAPI) is needed for any Node.js front end; it has to be named
 in the commit message that adds it.
+
+---
+
+## Status at 2026-11-23
+
+| Candidate | Status | What changed |
+|---|---|---|
+| 1 LLM outcomes as text | Open | The evals still recognise a fallback by its warning text. |
+| 2 Usage and cost in three places | **Mostly done** | `build_report` is the only place that adds up usage; `runner._finalize` only attaches timings. The evals price through the same `usage_cost_usd`, with the run's own prices. Still open: `model_name()` and the `openai/` prefix guess. |
+| 3 Security guarantee has no single home | Open | Unchanged. |
+| 4 Price provenance in loose fields | Open | Less urgent: all five services have live prices, and a service that falls back is named in the report. |
+| 5 Raw attribute dicts | Open (speculative) | Unchanged. |
+| 6 Region resolution split | Done | `bb90cfd` and later. |
+| 7 Two renderers drift | Superseded by 9 | |
+| 8 Review service | Done | `agent/service.py`. The MCP server still calls `run_review` directly. |
+| 9 Report as the contract | Done | TypeScript types generated from the OpenAPI schema (`api/schema.py`). |
+
+From "Other observations": input is validated once, at the entry points, and no longer a
+second time inside `parse_terraform`; live prices are refreshed daily, and a failed load is
+retried after five minutes, not kept until the process ends.

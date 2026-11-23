@@ -6,11 +6,13 @@ report says so. Recommendations without a document are shown as suggestions.
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from agent.deps import Deps
 from agent.state import ReviewState
 from rag.retriever import RetrieverError
+from tools.logs import log_failure
 from tools.models import Doc
 
 
@@ -24,6 +26,7 @@ def make_retrieve(deps: Deps):
                     if doc.id not in already_kept and doc.id not in found:
                         found[doc.id] = doc
         except RetrieverError as exc:
+            log_failure("retrieve.failed", exc, level=logging.WARNING)
             return {"docs": [], "errors": [str(exc)], "stop_research": True}
         return {"docs": list(found.values())}
 

@@ -23,6 +23,9 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
+from evals.llm_value import enriched_rows  # noqa: E402
+from evals.metrics import share  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 RESULTS_DIR = ROOT / "evals" / "results"
 IMG_DIR = ROOT / "docs" / "img"
@@ -54,16 +57,15 @@ def _configs(data: dict[str, Any]) -> set[str]:
 
 ABLATIONS = {"no_rag", "no_rewrite"}
 REACT = "react"
+NO_GRADE = "no_grade"
 
-# The three LLM sections can come from different runs. Each is paid for once: the
+# The LLM sections can come from different runs. Each is paid for once: the
 # ablations on one model, the ReAct baseline on one model, the comparison on several.
 
 
 def comparison_run(results_dir: Path = RESULTS_DIR) -> Result | None:
-    """Newest run of the graph agent alone (`full`, no baseline): the model comparison."""
-    return latest(
-        "llm", results_dir, lambda data: "full" in _configs(data) and REACT not in _configs(data)
-    )
+    """Newest run of the graph agent as designed, and nothing else: the model comparison."""
+    return latest("llm", results_dir, lambda data: _configs(data) == {"full"})
 
 
 def ablation_run(results_dir: Path = RESULTS_DIR) -> Result | None:
@@ -74,6 +76,24 @@ def ablation_run(results_dir: Path = RESULTS_DIR) -> Result | None:
 def react_run(results_dir: Path = RESULTS_DIR) -> Result | None:
     """Newest run that includes the ReAct baseline next to the graph agent."""
     return latest("llm", results_dir, lambda data: REACT in _configs(data))
+
+
+def grading_run(results_dir: Path = RESULTS_DIR) -> Result | None:
+    """Newest run with and without the grading step."""
+    return latest("llm", results_dir, lambda data: {"full", NO_GRADE} <= _configs(data))
+
+
+def prompt_run(results_dir: Path = RESULTS_DIR) -> Result | None:
+    """Newest run that compares prompts for the report writer."""
+    return latest(
+        "llm",
+        results_dir,
+        lambda data: "full" in _configs(data) and any(map(_is_prompt, _configs(data))),
+    )
+
+
+def _is_prompt(config: str) -> bool:
+    return config.startswith("prompt_")
 
 
 def table(headers: list[str], rows: list[list[Any]]) -> str:
@@ -170,9 +190,85 @@ def deterministic_section(path: Path, data: dict[str, Any]) -> str:
             f"mean absolute percentage error {c['mean_abs_pct_error']:.2f}%.",
             f"**Retrieval** ({retrieval['n_queries']} queries, one expected document each):",
             table(["Setting", "Hit rate @1", "Hit rate @2", "Hit rate @4", "MRR"], retrieval_rows),
+            *_hard_retrieval_part(data.get("retrieval_hard")),
+            *_heldout_part(data.get("heldout")),
             "**Speed of the deterministic steps:**",
             table(["Step", "Measurements", "Median (ms)", "p95 (ms)"], speed_rows),
             "![Median time per deterministic step](docs/img/tool_latency.png)",
+        ]
+    )
+
+
+def _hard_retrieval_part(hard: dict[str, Any] | None) -> list[str]:
+    if not hard:
+        return []
+    rows = [
+        [kind.replace("_", " "), r["n_queries"], r["hit_rate_at_1"], r["hit_rate_at_2"],
+         r["hit_rate_at_4"], r["mrr"]]
+        for kind, r in hard.items()
+    ]  # fmt: skip
+    headers = ["Kind", "Queries", "Hit rate @1", "Hit rate @2", "Hit rate @4", "MRR"]
+    return [
+        "**Retrieval on the harder queries** (first search alone, with service filter; a hit "
+        "is any of the query's expected documents):",
+        table(headers, rows),
+    ]
+
+
+def _heldout_part(heldout: dict[str, Any] | None) -> list[str]:
+    if not heldout:
+        return []
+    score = heldout["overall"]
+    row = [heldout["n_samples"], heldout["rules_scored"],
+           score["true_positives"], score["false_positives"],
+           score["false_negatives"], score["precision"], score["recall"], score["f1"]]  # fmt: skip
+    return [
+        "**Security rules on the held-out samples** (labelled by "
+        f"{', '.join(heldout['labelled_by'])}):",
+        table(["Samples", "Rules scored", "TP", "FP", "FN", "Precision", "Recall", "F1"], [row]),
+        table(
+            ["Rule", "TP", "FP", "FN", "Precision", "Recall"],
+            [
+                [
+                    rule_id,
+                    s["true_positives"],
+                    s["false_positives"],
+                    s["false_negatives"],
+                    s["precision"],
+                    s["recall"],
+                ]
+                for rule_id, s in heldout["by_rule"].items()
+            ],
+        ),
+    ]
+
+
+def price_section(path: Path, data: dict[str, Any]) -> str:
+    """The static price table against the live Billing Catalog (evals/price_check.py)."""
+    services = [
+        [r["service"], r["n_prices"], r["n_off_by_over_1_pct"], r["mean_abs_error_pct"],
+         r["max_abs_error_pct"]]
+        for r in data["summary"]
+    ]  # fmt: skip
+    samples = [
+        [f"`{r['file']}`", r["static_usd"], r["live_usd"], r["error_pct"]] for r in data["samples"]
+    ]
+    return "\n\n".join(
+        [
+            "### Static prices against live list prices",
+            f"Source: `evals/results/{path.name}`. One price per key and listed region.",
+            table(
+                [
+                    "Prices",
+                    "Compared",
+                    "Off by more than 1%",
+                    "Mean error (%)",
+                    "Largest error (%)",
+                ],
+                services,
+            ),
+            "The same samples estimated with both tables (USD per month):",
+            table(["Sample", "Static", "Live", "Difference (%)"], samples),
         ]
     )
 
@@ -285,6 +381,87 @@ def ablation_section(path: Path, data: dict[str, Any]) -> str:
             _source(path, meta),
             table(headers, ablation_rows),
             "![Ablations](docs/img/ablations.png)",
+        ]
+    )
+
+
+def _variant_rows(data: dict[str, Any], wanted: Callable[[str], bool]) -> list[dict[str, Any]]:
+    first = data["meta"]["models"][0]
+    return [
+        r
+        for r in data["summary"]
+        if r.get("n_ok") and r["model"] == first and (r["config"] == "full" or wanted(r["config"]))
+    ]
+
+
+def grading_section(path: Path, data: dict[str, Any]) -> str:
+    meta = data["meta"]
+    rows = [
+        [r["config"], r["recommendations_per_review"], r["share_with_valid_source"],
+         r["n_ragas_judged"], r["ragas_context_precision_mean"], r["ragas_faithfulness_mean"],
+         r["faithfulness_mean"], r["latency"]["median_s"], r["llm_calls_mean"],
+         _usd(r["cost_usd_mean"])]
+        for r in _variant_rows(data, lambda config: config == NO_GRADE)
+    ]  # fmt: skip
+    headers = [
+        "Configuration", "Recs / review", "Share with source", "Reviews judged (Ragas)",
+        "Ragas context precision", "Ragas faithfulness", "Faithfulness", "Median (s)",
+        "LLM calls", "USD / review",
+    ]  # fmt: skip
+    return "\n\n".join(
+        [
+            f"### With and without the grading step ({meta['models'][0]})",
+            _source(path, meta),
+            table(headers, rows),
+        ]
+    )
+
+
+def prompt_section(path: Path, data: dict[str, Any]) -> str:
+    meta = data["meta"]
+    rows = []
+    for r in _variant_rows(data, _is_prompt):
+        texts = enriched_rows(
+            [record for record in data["records"] if record["model"] == r["model"]], r["config"]
+        )
+        advice = [item for text in texts for item in text["recommendations"]]
+        specific = sum(1 for item in advice if item["terms"])
+        rows.append(
+            [r["config"], r["recommendations_per_review"], r["share_with_valid_source"],
+             share(specific, len(advice)), len(advice), r["faithfulness_mean"],
+             r["answer_relevancy_mean"], r["output_tokens_mean"], r["latency"]["median_s"],
+             _usd(r["cost_usd_mean"])]
+        )  # fmt: skip
+    headers = [
+        "Prompt", "Recs / review", "Share with source", "Share naming the configuration",
+        "Recs measured", "Faithfulness", "Answer relevancy", "Output tokens", "Median (s)",
+        "USD / review",
+    ]  # fmt: skip
+    return "\n\n".join(
+        [
+            f"### Prompts for the report writer ({meta['models'][0]})",
+            _source(path, meta) + " `full` is the prompt the agent uses.",
+            table(headers, rows),
+        ]
+    )
+
+
+def rewrite_section(path: Path, data: dict[str, Any]) -> str:
+    rows = [
+        [r["kind"].replace("_", " "), r["n_queries"], r["answered_first"], r["answered_final"],
+         r["kept_nothing_when_uncovered"], r["share_rewritten"], r["rewrites_mean"],
+         _usd(r["cost_usd_mean"])]
+        for r in data["summary"]
+    ]  # fmt: skip
+    headers = [
+        "Kind", "Queries", "Answered, first search", "Answered, after the loop",
+        "Kept nothing when uncovered", "Share rewritten", "Rewrites / query", "USD / query",
+    ]  # fmt: skip
+    return "\n\n".join(
+        [
+            f"### The rewrite loop on hard queries ({data['meta']['model']})",
+            f"Source: `evals/results/{path.name}`.",
+            table(headers, rows),
         ]
     )
 
@@ -452,10 +629,18 @@ def build() -> str:
         if deterministic
         else "No deterministic results yet. Run `uv run python -m evals.run`."
     )
+    if prices := latest("price_check"):
+        parts.append(price_section(*prices))
     comparison = comparison_run()
     parts.append(llm_section(*comparison) if comparison else LLM_PENDING)
     if ablations := ablation_run():
         parts.append(ablation_section(*ablations))
+    if grading := grading_run():
+        parts.append(grading_section(*grading))
+    if prompts := prompt_run():
+        parts.append(prompt_section(*prompts))
+    if rewriting := latest("rewrite_loop"):
+        parts.append(rewrite_section(*rewriting))
     if react := react_run():
         parts.append(react_section(*react))
     if value := latest("llm_value"):

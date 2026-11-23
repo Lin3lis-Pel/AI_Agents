@@ -1,6 +1,6 @@
 ### Deterministic parts (no LLM)
 
-Source: `evals/results/20261110T081110Z_deterministic.json`. 14 samples.
+Source: `evals/results/20261123T213249Z_deterministic.json`. 14 samples.
 
 **Security rules** (a finding is a `(resource, rule)` pair):
 
@@ -23,16 +23,76 @@ Critical false positives on the clean samples: **0**.
 | with service filter | 0.94 | 0.97 | 0.97 | 0.96 |
 | without service filter | 0.94 | 0.97 | 0.97 | 0.96 |
 
+**Retrieval on the harder queries** (first search alone, with service filter; a hit is any of the query's expected documents):
+
+| Kind | Queries | Hit rate @1 | Hit rate @2 | Hit rate @4 | MRR |
+|---|---|---|---|---|---|
+| vague | 7 | 0.43 | 0.57 | 0.57 | 0.57 |
+| other cloud | 7 | 0.43 | 0.57 | 0.71 | 0.54 |
+| two topics | 2 | 1.00 | 1.00 | 1.00 | 1.00 |
+| all | 16 | 0.50 | 0.62 | 0.69 | 0.61 |
+
+**Security rules on the held-out samples** (labelled by Checkov 3.4.7):
+
+| Samples | Rules scored | TP | FP | FN | Precision | Recall | F1 |
+|---|---|---|---|---|---|---|---|
+| 35 | 15 | 53 | 7 | 0 | 0.88 | 1.00 | 0.94 |
+
+| Rule | TP | FP | FN | Precision | Recall |
+|---|---|---|---|---|---|
+| GCE-001 | 1 | 0 | 0 | 1.00 | 1.00 |
+| GCE-004 | 4 | 0 | 0 | 1.00 | 1.00 |
+| GCS-001 | 3 | 0 | 0 | 1.00 | 1.00 |
+| GCS-002 | 2 | 0 | 0 | 1.00 | 1.00 |
+| GCS-003 | 6 | 0 | 0 | 1.00 | 1.00 |
+| GCS-004 | 6 | 0 | 0 | 1.00 | 1.00 |
+| GKE-001 | 7 | 0 | 0 | 1.00 | 1.00 |
+| GKE-002 | 7 | 0 | 0 | 1.00 | 1.00 |
+| GKE-003 | 1 | 0 | 0 | 1.00 | 1.00 |
+| RUN-001 | 1 | 0 | 0 | 1.00 | 1.00 |
+| SQL-001 | 1 | 0 | 0 | 1.00 | 1.00 |
+| SQL-002 | 1 | 7 | 0 | 0.12 | 1.00 |
+| SQL-003 | 9 | 0 | 0 | 1.00 | 1.00 |
+| SQL-004 | 4 | 0 | 0 | 1.00 | 1.00 |
+
 **Speed of the deterministic steps:**
 
 | Step | Measurements | Median (ms) | p95 (ms) |
 |---|---|---|---|
-| parse | 280 | 3.562 | 7.316 |
-| security check | 280 | 0.051 | 0.105 |
-| cost estimate | 280 | 0.069 | 0.111 |
-| retrieve one query | 20 | 189.213 | 196.157 |
+| parse | 280 | 2.965 | 5.475 |
+| security check | 280 | 0.054 | 0.127 |
+| cost estimate | 280 | 0.036 | 0.081 |
+| retrieve one query | 20 | 206.200 | 217.762 |
 
 ![Median time per deterministic step](docs/img/tool_latency.png)
+
+### Static prices against live list prices
+
+Source: `evals/results/20261123T211900Z_price_check.json`. One price per key and listed region.
+
+| Prices | Compared | Off by more than 1% | Mean error (%) | Largest error (%) |
+|---|---|---|---|---|
+| compute | 64 | 0 | 0.00 | 0.02 |
+| disk | 24 | 0 | 0.00 | 0.00 |
+| gcs | 32 | 19 | 7.32 | 38.08 |
+| gke | 8 | 0 | 0.00 | 0.00 |
+| run | 32 | 20 | 5.62 | 12.14 |
+| sql | 48 | 18 | 3.72 | 12.14 |
+
+The same samples estimated with both tables (USD per month):
+
+| Sample | Static | Live | Difference (%) |
+|---|---|---|---|
+| `vulnerable/gcs_public.tf` | 2.00 | 2.00 | 0.00 |
+| `vulnerable/sql_open.tf` | 231.25 | 231.25 | 0.00 |
+| `vulnerable/compute_open_ssh.tf` | 150.29 | 150.29 | 0.00 |
+| `vulnerable/cloud_run_public_secret.tf` | 39.42 | 39.42 | 0.00 |
+| `vulnerable/gke_insecure.tf` | 396.53 | 396.51 | 0.01 |
+| `clean/gcs_clean.tf` | 1.10 | 1.00 | 10.00 |
+| `clean/sql_clean.tf` | 57.98 | 52.71 | 10.00 |
+| `clean/compute_clean.tf` | 26.46 | 26.46 | 0.00 |
+| `clean/gke_clean.tf` | 190.84 | 190.84 | 0.00 |
+| `mixed/web_stack.tf` | 124.32 | 123.39 | 0.75 |
 
 ### Full agent, per model
 

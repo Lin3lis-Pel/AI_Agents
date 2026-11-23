@@ -11,16 +11,17 @@ graph: nothing here can add, remove or change a security finding.
 from __future__ import annotations
 
 from collections.abc import Callable, Iterator
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field
 
 from agent.config import Settings
 from agent.deps import Deps, default_deps
-from agent.runner import ReviewSession
+from agent.runner import ReviewSession, new_review_id
 from agent.state import ReviewReport
 from memory.feedback_policy import PROTECTED_CATEGORIES
 from memory.store import FeedbackAction, FeedbackItem, ProjectConstraints
+from tools.logs import log_event, log_failure
 from tools.models import Service
 from tools.security_rules import RULES
 from tools.tf_parser import MAX_INPUT_BYTES, SUPPORTED_TYPES, TerraformInputError
@@ -53,14 +54,32 @@ class ReviewOptions(BaseModel):
     extra_instructions: str | None = Field(default=None, max_length=1000)
 
 
-class ReviewEvent(BaseModel):
-    """One line of a review's progress. The last event is `report`, `rejected` or `error`."""
+class StepEvent(BaseModel):
+    """A graph node just finished."""
 
-    type: Literal["step", "report", "rejected", "error"]
-    step: str | None = None  # the graph node that just finished
-    report: ReviewReport | None = None
-    waiting_for_feedback: bool = False
-    message: str | None = None  # why the input was rejected, or what went wrong
+    type: Literal["step"] = "step"
+    step: str
+
+
+class ReportEvent(BaseModel):
+    """The review is done. Always the last event."""
+
+    type: Literal["report"] = "report"
+    report: ReviewReport
+    waiting_for_feedback: bool
+
+
+class ProblemEvent(BaseModel):
+    """The input was rejected, or the review failed. Always the last event."""
+
+    type: Literal["rejected", "error"]
+    message: str  # safe to show to a user
+    review_id: str  # the review's id in the server log
+
+
+# What a review sends, one event at a time. A union rather than one class with optional
+# fields, so that the schema says which fields each event really has.
+ReviewEvent = Annotated[StepEvent | ReportEvent | ProblemEvent, Field(discriminator="type")]
 
 
 class FeedbackChoice(BaseModel):
@@ -78,6 +97,19 @@ class FinishResult(BaseModel):
     status: Literal["ok", "not_found", "already_finished"]
     saved: int = 0
     ignored: int = 0  # answers about security findings or positions that do not exist
+
+
+def _outcome(report: ReviewReport) -> dict[str, object]:
+    """What the log says about a finished review: counts and times, no content."""
+    return {
+        "status": report.status,
+        "model": report.model,
+        "findings": len(report.findings),
+        "warnings": len(report.warnings),
+        "llm_calls": report.usage.llm_calls,
+        "cost_usd": report.usage.cost_usd,
+        "seconds": report.timings.get("total"),
+    }
 
 
 class ReviewService:
@@ -108,31 +140,41 @@ class ReviewService:
         )
 
     def stream_review(
-        self, terraform: str, project_id: str = "default", options: ReviewOptions | None = None
+        self,
+        terraform: str,
+        project_id: str = "default",
+        options: ReviewOptions | None = None,
+        request_id: str | None = None,
     ) -> Iterator[ReviewEvent]:
         """Review `terraform`, yielding one event per finished step and the outcome last.
 
         Expected problems are events, not exceptions: a front end shows `message` as is.
+        The cause of an unexpected one is in the log, under the review id in the event.
         """
-        overrides = options.model_dump(exclude_none=True) if options else {}
-        session = self._session(self._settings.model_copy(update=overrides))
+        ids = {"review_id": new_review_id(), "request_id": request_id}
+        log_event("review.started", **ids)
         try:
-            for item in session.start_steps(terraform, project_id):
+            overrides = options.model_dump(exclude_none=True) if options else {}
+            session = self._session(self._settings.model_copy(update=overrides))
+            for item in session.start_steps(terraform, project_id, ids["review_id"]):
                 if isinstance(item, ReviewReport):
                     self._remember(session, item)
-                    yield ReviewEvent(
-                        type="report",
-                        report=item,
-                        waiting_for_feedback=session.is_waiting(item.review_id),
+                    log_event("review.finished", **ids, **_outcome(item))
+                    yield ReportEvent(
+                        report=item, waiting_for_feedback=session.is_waiting(item.review_id)
                     )
                 else:
-                    yield ReviewEvent(type="step", step=item)
+                    yield StepEvent(step=item)
         except TerraformInputError as exc:
-            yield ReviewEvent(type="rejected", message=str(exc))
+            log_event("review.rejected", **ids, reason=type(exc).__name__)
+            yield ProblemEvent(type="rejected", message=str(exc), review_id=ids["review_id"])
         except Exception as exc:  # a clear message, never a stack trace
-            yield ReviewEvent(
+            log_failure("review.failed", exc, **ids)
+            yield ProblemEvent(
                 type="error",
-                message=f"The review failed unexpectedly ({type(exc).__name__}). Please try again.",
+                message=f"The review failed unexpectedly ({type(exc).__name__}). "
+                f"Please try again. Reference: {ids['review_id']}.",
+                review_id=ids["review_id"],
             )
 
     def _remember(self, session: ReviewSession, report: ReviewReport) -> None:
@@ -144,7 +186,8 @@ class ReviewService:
         """Send the user's feedback for a review that is waiting for it, and save it.
 
         Answers about security findings are ignored here as well as by the feedback
-        policy: feedback may only lower the priority of cost and sizing suggestions.
+        policy: feedback may only lower the priority of cost, sizing and simplification
+        suggestions.
         """
         if review_id not in self._reviews:
             return FinishResult(status="not_found")
@@ -179,7 +222,8 @@ class ReviewService:
         """Names of the example Terraform files a user can start from."""
         from evals.dataset_loader import DATASET_DIR
 
-        return sorted(p.relative_to(DATASET_DIR).as_posix() for p in DATASET_DIR.rglob("*.tf"))
+        names = (p.relative_to(DATASET_DIR).as_posix() for p in DATASET_DIR.rglob("*.tf"))
+        return sorted(name for name in names if not name.startswith("heldout/"))
 
     def sample(self, name: str) -> str | None:
         """The text of one example file, or None. Only names from `samples()` are read."""
