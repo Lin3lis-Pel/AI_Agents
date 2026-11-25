@@ -5,6 +5,11 @@ own terms.
 
 - `rag/docs/`: short summaries of Google Cloud documentation pages, written for this project.
   Each file records its source in `source_url`. The original pages belong to Google.
+- `evals/dataset/heldout/`: unmodified Terraform files from
+  [TerraGoat](https://github.com/bridgecrewio/terragoat) and Google's
+  [documentation samples](https://github.com/terraform-google-modules/terraform-docs-samples),
+  both under Apache-2.0. The license text is in each folder; pinned commits are in
+  `manifest.json`.
 - `.claude/skills/`: includes skills adapted from
   [mattpocock/skills](https://github.com/mattpocock/skills), used under this license:
 
